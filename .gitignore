@@ -1,0 +1,27 @@
+# ----------------------
+# Server
+# ----------------------
+server/node_modules/
+server/.env
+server/logs/
+server/*.log
+server/package-lock.json
+server/yarn.lock
+server/dist/
+
+# ----------------------
+# Client
+# ----------------------
+client/node_modules/
+client/build/
+client/.env
+client/package-lock.json
+client/yarn.lock
+
+# ----------------------
+# OS / IDE
+# ----------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
