@@ -1,13 +1,9 @@
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
 // Generate JWT Token
 const generateToken = (id, role) => {
-  return jwt.sign(
-    { id, role },
-    process.env.JWT_SECRET,
-    { expiresIn: '30d' }
-  );
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "30d" });
 };
 
 // @desc    Register user
@@ -21,7 +17,7 @@ exports.register = async (req, res) => {
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists'
+        message: "User already exists",
       });
     }
 
@@ -30,7 +26,7 @@ exports.register = async (req, res) => {
       name,
       email,
       password,
-      phone
+      phone,
     });
 
     // Generate token
@@ -44,13 +40,13 @@ exports.register = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -66,7 +62,7 @@ exports.login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
@@ -75,7 +71,7 @@ exports.login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: "Invalid credentials",
       });
     }
 
@@ -94,13 +90,13 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -109,15 +105,15 @@ exports.login = async (req, res) => {
 // @route   GET /api/auth/me
 exports.getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id).select("-password");
     res.json({
       success: true,
-      data: user
+      data: user,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 };

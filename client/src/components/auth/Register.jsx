@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, UserPlus } from "lucide-react";
+import { Mail, Lock, User, UserPlus, Phone } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 const Register = () => {
@@ -10,8 +10,9 @@ const Register = () => {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phone: "", // ✅ added phone
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
 
   const [error, setError] = useState("");
@@ -21,7 +22,7 @@ const Register = () => {
   const backgroundImages = [
     "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=2070&q=80",
     "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=2070&q=80",
-    "https://images.unsplash.com/photo-1580674285054-bed31e145f4d?auto=format&fit=crop&w=2070&q=80"
+    "https://images.unsplash.com/photo-1580674285054-bed31e145f4d?auto=format&fit=crop&w=2070&q=80",
   ];
 
   useEffect(() => {
@@ -38,14 +39,29 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (form.password.length < 6) {
+      return setError("Password must be at least 6 characters");
+    }
+
     if (form.password !== form.confirmPassword) {
       return setError("Passwords do not match");
+    }
+
+    if (!form.phone) {
+      return setError("Phone number is required");
     }
 
     try {
       setLoading(true);
       setError("");
-      await register(form.name, form.email, form.password);
+
+      await register({
+        name: form.name,
+        email: form.email,
+        phone: form.phone, // ✅ sending phone to backend
+        password: form.password,
+      });
+
       navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
@@ -56,7 +72,6 @@ const Register = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-
       {/* Background Carousel */}
       {backgroundImages.map((img, index) => (
         <div
@@ -64,7 +79,11 @@ const Register = () => {
           className={`absolute inset-0 transition-opacity duration-1000 ${
             index === imageIndex ? "opacity-100" : "opacity-0"
           }`}
-          style={{ backgroundImage: `url(${img})`, backgroundSize: "cover", backgroundPosition: "center" }}
+          style={{
+            backgroundImage: `url(${img})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         >
           <div className="absolute inset-0 bg-black/65" />
         </div>
@@ -73,7 +92,6 @@ const Register = () => {
       {/* Register Card */}
       <div className="relative z-10 w-full max-w-md px-6">
         <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl p-8">
-
           <div className="text-center mb-6">
             <div className="inline-flex p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl mb-4">
               <UserPlus className="h-8 w-8 text-white" />
@@ -91,7 +109,6 @@ const Register = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-
             {/* Name */}
             <div>
               <label className="text-sm font-medium text-gray-600">
@@ -113,9 +130,7 @@ const Register = () => {
 
             {/* Email */}
             <div>
-              <label className="text-sm font-medium text-gray-600">
-                Email
-              </label>
+              <label className="text-sm font-medium text-gray-600">Email</label>
               <div className="flex items-center border rounded-lg px-3 mt-1">
                 <Mail className="h-4 w-4 text-gray-400" />
                 <input
@@ -125,6 +140,25 @@ const Register = () => {
                   onChange={handleChange}
                   className="w-full p-2 outline-none"
                   placeholder="Enter your email"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="text-sm font-medium text-gray-600">
+                Phone Number
+              </label>
+              <div className="flex items-center border rounded-lg px-3 mt-1">
+                <Phone className="h-4 w-4 text-gray-400" />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  className="w-full p-2 outline-none"
+                  placeholder="Enter your phone number"
                   required
                 />
               </div>
@@ -143,7 +177,7 @@ const Register = () => {
                   value={form.password}
                   onChange={handleChange}
                   className="w-full p-2 outline-none"
-                  placeholder="Create password"
+                  placeholder="Create password (min 6 characters)"
                   required
                 />
               </div>

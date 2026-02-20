@@ -52,7 +52,6 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
-
 // Layout Wrapper
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -70,7 +69,6 @@ const AppLayout = ({ children }) => {
   );
 };
 
-
 function App() {
   return (
     <AuthProvider>
@@ -78,7 +76,6 @@ function App() {
         <Router>
           <AppLayout>
             <Routes>
-
               {/* Redirect */}
               <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -252,7 +249,6 @@ function App() {
 
               {/* 404 */}
               <Route path="*" element={<NotFound />} />
-
             </Routes>
           </AppLayout>
         </Router>

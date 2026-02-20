@@ -11,7 +11,7 @@ exports.initializeSocket = (io) => {
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ Disconnected:", socket.id);
+      console.log("Disconnected:", socket.id);
     });
   });
 };
