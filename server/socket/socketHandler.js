@@ -1,52 +1,71 @@
-let ioInstance;
+import Route from "../models/Route.js";
 
-const Bus = require("../models/Bus");
+export const initializeSocket = (io) => {
+  let routeCoordinates = [];
+  let currentIndex = 0;
 
-exports.initializeSocket = (io) => {
-  ioInstance = io;
+  /* Load Route Path */
+  async function loadRoutePath() {
+    try {
+      const route = await Route.findOne();
+
+      if (!route?.path?.length) {
+        console.log("❌ No route path found");
+        return;
+      }
+
+      routeCoordinates = route.path.map((p) => ({
+        lat: Number(p.lat),
+        lng: Number(p.lng),
+      }));
+
+      console.log("✅ Socket Path Loaded →", routeCoordinates.length, "nodes");
+    } catch (err) {
+      console.error("Route Load Error:", err.message);
+    }
+  }
+
+  loadRoutePath();
+
+  /* Socket Connection */
 
   io.on("connection", (socket) => {
-    console.log("🔌 User connected:", socket.id);
+    console.log("✅ Socket Connected:", socket.id);
 
-    // Passenger joins a bus room
     socket.on("track-bus", (busId) => {
       socket.join(busId);
-      console.log(`👀 Passenger joined room: ${busId}`);
+      console.log("👀 Tracking Room Joined →", busId);
     });
 
-    // Driver sends location
-    socket.on("driver-location-update", async (data) => {
-      try {
-        const { busId, latitude, longitude } = data;
+    /* ⭐ Movement Engine */
 
-        // Update in database
-        await Bus.findOneAndUpdate(
-          { busNumber: busId },
-          {
-            location: {
-              lat: latitude,
-              lng: longitude,
-            },
-          },
-        );
+    let movementInterval = setInterval(() => {
+      if (!routeCoordinates.length) return;
 
-        // Emit only to that bus room
-        io.to(busId).emit("bus-location-update", {
-          busId,
-          latitude,
-          longitude,
-        });
+      const busId = "MH09-1234";
 
-        console.log(`📡 Location updated for bus ${busId}`);
-      } catch (error) {
-        console.error("Socket location update error:", error.message);
+      const path = routeCoordinates;
+
+      const point = path[currentIndex];
+
+      if (!point) return;
+
+      io.to(busId).emit("bus-location-update", {
+        busId,
+        latitude: point.lat,
+        longitude: point.lng,
+      });
+
+      currentIndex++;
+
+      if (currentIndex >= path.length) {
+        currentIndex = 0;
       }
-    });
+    }, 180);
 
     socket.on("disconnect", () => {
-      console.log("❌ Disconnected:", socket.id);
+      console.log("❌ Socket Disconnected:", socket.id);
+      clearInterval(movementInterval);
     });
   });
 };
-
-exports.getIO = () => ioInstance;

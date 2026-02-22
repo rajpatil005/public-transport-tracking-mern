@@ -3,6 +3,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useSocket } from "../../context/SocketProvider";
 
+/* ================= ICON SETUP ================= */
+
 delete L.Icon.Default.prototype._getIconUrl;
 
 L.Icon.Default.mergeOptions({
@@ -14,25 +16,22 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// 🚌 Google-style Bus Icon
 const busIcon = L.icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
   iconSize: [45, 45],
   iconAnchor: [22, 45],
 });
 
-// 🟢 Start Start Pin
 const startIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/128/684/684908.png",
-  iconSize: [42, 42],
-  iconAnchor: [21, 42],
+  iconUrl: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
 });
 
-// 🔴 Destination End Pin
 const endIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/128/535/535137.png",
-  iconSize: [42, 42],
-  iconAnchor: [21, 42],
+  iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
 });
 
 const DEFAULT_CENTER = [16.705, 74.2433];
@@ -44,29 +43,32 @@ const BusTracker = ({ bus }) => {
   const startMarkerRef = useRef(null);
   const endMarkerRef = useRef(null);
 
-  const { on, off, isConnected } = useSocket();
+  const { on, off, isConnected, socket } = useSocket();
 
-  // ✅ Initialize Map
+  /* ================= MAP INIT ================= */
+
   useEffect(() => {
     if (mapRef.current) return;
 
-    const map = L.map("bus-map", {
+    const container = document.getElementById("bus-map");
+    if (!container) return;
+
+    const map = L.map(container, {
       center: DEFAULT_CENTER,
       zoom: 14,
+      attributionControl: true,
     });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
-    const polyline = L.polyline([], {
+    polylineRef.current = L.polyline([], {
       weight: 6,
       color: "#2563eb",
-      opacity: 0.9,
     }).addTo(map);
 
     mapRef.current = map;
-    polylineRef.current = polyline;
 
     return () => {
       map.remove();
@@ -74,94 +76,92 @@ const BusTracker = ({ bus }) => {
     };
   }, []);
 
-  // ✅ Load Real Route
-  useEffect(() => {
-    const fetchRealRoute = async () => {
-      if (!bus?.route?.stops || !mapRef.current) return;
+  /* ================= SOCKET ROOM JOIN ================= */
 
-      const firstStop = bus.route.stops[0];
-      const lastStop = bus.route.stops[bus.route.stops.length - 1];
+  useEffect(() => {
+    if (!socket || !bus?.busNumber) return;
+
+    socket.emit("track-bus", bus.busNumber);
+  }, [socket, bus?.busNumber]);
+
+  /* ================= ROUTE FETCH ================= */
+
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (!bus?.route?.stops?.length || !mapRef.current) return;
 
       try {
-        const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${firstStop.lng},${firstStop.lat};${lastStop.lng},${lastStop.lat}?overview=full&geometries=geojson`,
-        );
+        const stops = bus.route.stops;
 
+        const first = stops[0];
+        const last = stops[stops.length - 1];
+
+        const url = `https://router.project-osrm.org/route/v1/driving/${first.lng},${first.lat};${last.lng},${last.lat}?overview=full&geometries=geojson`;
+
+        const response = await fetch(url);
         const data = await response.json();
-        const coordinates = data.routes[0].geometry.coordinates;
 
-        const latlngs = coordinates.map((coord) => [coord[1], coord[0]]);
+        if (!data.routes?.length) return;
 
-        polylineRef.current.setLatLngs(latlngs);
-        mapRef.current.fitBounds(latlngs);
+        const path = data.routes[0].geometry.coordinates.map((c) => [
+          c[1],
+          c[0],
+        ]);
 
-        if (startMarkerRef.current)
-          mapRef.current.removeLayer(startMarkerRef.current);
-        if (endMarkerRef.current)
-          mapRef.current.removeLayer(endMarkerRef.current);
+        polylineRef.current?.setLatLngs(path);
 
-        startMarkerRef.current = L.marker([firstStop.lat, firstStop.lng], {
+        setTimeout(() => {
+          if (mapRef.current && path.length) {
+            mapRef.current.invalidateSize();
+            mapRef.current.fitBounds(path);
+          }
+        }, 400);
+
+        startMarkerRef.current?.remove();
+        endMarkerRef.current?.remove();
+
+        startMarkerRef.current = L.marker([first.lat, first.lng], {
           icon: startIcon,
-        })
-          .addTo(mapRef.current)
-          .bindPopup(`<b>Start:</b><br/>${firstStop.name}`);
+        }).addTo(mapRef.current);
 
-        endMarkerRef.current = L.marker([lastStop.lat, lastStop.lng], {
+        endMarkerRef.current = L.marker([last.lat, last.lng], {
           icon: endIcon,
-        })
-          .addTo(mapRef.current)
-          .bindPopup(`<b>Destination:</b><br/>${lastStop.name}`);
-      } catch (error) {
-        console.error("Error fetching route:", error);
+        }).addTo(mapRef.current);
+      } catch (err) {
+        console.error("Route fetch error", err);
       }
     };
 
-    fetchRealRoute();
+    setTimeout(fetchRoute, 500);
   }, [bus]);
 
-  // ✅ Show Bus Safely (handles both lat/lng & latitude/longitude)
+  /* ================= LIVE TRACKING ================= */
+
   useEffect(() => {
-    if (!mapRef.current) return;
-
-    const lat = bus?.location?.lat ?? bus?.location?.latitude ?? null;
-    const lng = bus?.location?.lng ?? bus?.location?.longitude ?? null;
-
-    if (!lat || !lng) return;
-
-    const position = [Number(lat), Number(lng)];
-
-    if (markerRef.current) mapRef.current.removeLayer(markerRef.current);
-
-    markerRef.current = L.marker(position, {
-      icon: busIcon,
-    }).addTo(mapRef.current);
-
-    markerRef.current.bindPopup(
-      `<b>Bus ${bus.busNumber}</b><br/>Status: ${bus.status}`,
-    );
-  }, [bus]);
-
-  // ✅ Live Movement
-  useEffect(() => {
-    if (!bus?._id) return;
+    if (!bus?.busNumber) return;
 
     const handler = (payload) => {
-      if (!payload || payload.busId !== bus._id) return;
+      if (!payload || payload.busId !== bus.busNumber) return;
+      if (!mapRef.current) return;
 
-      const newLat = payload.latitude ?? payload.lat;
-      const newLng = payload.longitude ?? payload.lng;
+      const lat = Number(payload.latitude);
+      const lng = Number(payload.longitude);
 
-      if (!markerRef.current || !newLat || !newLng) return;
+      if (!markerRef.current) {
+        markerRef.current = L.marker([lat, lng], {
+          icon: busIcon,
+        }).addTo(mapRef.current);
+      } else {
+        markerRef.current.setLatLng([lat, lng]);
+      }
 
-      markerRef.current.setLatLng([Number(newLat), Number(newLng)]);
+      mapRef.current.panTo([lat, lng], { animate: true });
     };
 
-    on("busLocationUpdate", handler);
+    on("bus-location-update", handler);
 
-    return () => {
-      off("busLocationUpdate", handler);
-    };
-  }, [bus?._id, on, off]);
+    return () => off("bus-location-update", handler);
+  }, [bus?.busNumber, on, off]);
 
   return (
     <div className="relative w-full h-full">

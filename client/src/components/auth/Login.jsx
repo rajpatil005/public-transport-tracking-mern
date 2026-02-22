@@ -12,7 +12,6 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  /* ---------------- SMART EMAIL VALIDATION ---------------- */
   const getEmailError = (email) => {
     if (!email) return "Email is required.";
 
@@ -22,14 +21,8 @@ const Login = () => {
 
     const [localPart, domain] = email.split("@");
 
-    if (!localPart) {
-      return "Email address is missing text before '@'.";
-    }
-
-    if (!domain) {
-      return `'${email}' is missing a domain after '@'.`;
-    }
-
+    if (!localPart) return "Email address is missing text before '@'.";
+    if (!domain) return `'${email}' is missing a domain after '@'.`;
     if (!domain.includes(".")) {
       return `'${email}' is missing a top-level domain (like .com).`;
     }
@@ -74,7 +67,7 @@ const Login = () => {
       await login(formData.email, formData.password);
       navigate("/home");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed.");
+      setError(err.message || "Login failed.");
     } finally {
       setLoading(false);
     }
@@ -82,14 +75,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen relative bg-gradient-to-br from-slate-800 via-blue-900 to-indigo-900 overflow-hidden">
-      {/* ABSTRACT BUS BACKGROUND */}
       <div className="absolute bottom-16 left-10 w-80 h-28 bg-blue-500/40 rounded-2xl"></div>
       <div className="absolute bottom-12 left-24 w-12 h-12 bg-slate-900/70 rounded-full"></div>
       <div className="absolute bottom-12 left-64 w-12 h-12 bg-slate-900/70 rounded-full"></div>
       <div className="absolute top-20 right-10 w-72 h-24 bg-indigo-400/40 rounded-2xl"></div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center max-w-6xl mx-auto">
-        {/* LEFT SIDE */}
         <div className="w-1/2 text-white pr-16">
           <div className="flex items-center gap-4 mb-6">
             <div className="p-4 bg-white/20 rounded-full">
@@ -97,19 +88,19 @@ const Login = () => {
             </div>
             <h1 className="text-4xl font-bold">Kolhapur Bus Tracking</h1>
           </div>
+
           <p className="text-lg mb-4">
             Smart real-time public transport tracking system.
           </p>
+
           <p className="opacity-90">
             Track buses live, reduce waiting time, and experience efficient
             travel.
           </p>
         </div>
 
-        {/* RIGHT SIDE CARD */}
         <div className="w-1/2 flex justify-center">
           <div className="relative w-full max-w-md p-10 rounded-3xl bg-white/10 border border-white/30 shadow-xl overflow-hidden">
-            {/* Card reflection */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/10 to-transparent pointer-events-none"></div>
 
             <div className="relative z-10">
@@ -121,9 +112,7 @@ const Login = () => {
                 </div>
               )}
 
-              {/* 🔥 noValidate disables browser popup */}
               <form onSubmit={handleSubmit} noValidate className="space-y-6">
-                {/* EMAIL */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Email
@@ -131,8 +120,9 @@ const Login = () => {
 
                   <div className="relative mt-2">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+
                     <input
-                      type="text" /* changed from email to text */
+                      type="text"
                       value={formData.email}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -144,12 +134,7 @@ const Login = () => {
                           email: emailError,
                         }));
                       }}
-                      className={`w-full pl-12 pr-4 py-3 rounded-xl bg-white/60 border transition-all duration-300
-                        ${
-                          validationErrors.email
-                            ? "border-red-500 ring-2 ring-red-300"
-                            : "border-white/40 focus:ring-2 focus:ring-indigo-500"
-                        }`}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/60 border transition-all duration-300 border-white/40 focus:ring-2 focus:ring-indigo-500"
                       placeholder="Enter your email"
                     />
                   </div>
@@ -161,7 +146,6 @@ const Login = () => {
                   )}
                 </div>
 
-                {/* PASSWORD */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Password
@@ -169,6 +153,7 @@ const Login = () => {
 
                   <div className="relative mt-2">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+
                     <input
                       type="password"
                       value={formData.password}
@@ -193,12 +178,7 @@ const Login = () => {
                           }));
                         }
                       }}
-                      className={`w-full pl-12 pr-4 py-3 rounded-xl bg-white/60 border transition-all duration-300
-                        ${
-                          validationErrors.password
-                            ? "border-red-500 ring-2 ring-red-300"
-                            : "border-white/40 focus:ring-2 focus:ring-indigo-500"
-                        }`}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/60 border transition-all duration-300 border-white/40 focus:ring-2 focus:ring-indigo-500"
                       placeholder="••••••••"
                     />
                   </div>
@@ -210,15 +190,10 @@ const Login = () => {
                   )}
                 </div>
 
-                {/* BUTTON */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 rounded-2xl font-bold text-white 
-                  bg-gradient-to-r from-indigo-600 to-blue-700 
-                  transition-all duration-300 
-                  hover:shadow-xl hover:scale-[1.02] 
-                  active:scale-95 disabled:opacity-70"
+                  className="w-full py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-indigo-600 to-blue-700 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-70"
                 >
                   {loading ? "Signing In..." : "Login"}
                 </button>

@@ -12,7 +12,7 @@ const generateToken = (id, role) => {
 // @route   POST /api/auth/register
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password } = req.body;
 
     const userExists = await User.findOne({ email });
 
@@ -27,7 +27,6 @@ export const register = async (req, res) => {
       name,
       email,
       password,
-      phone,
     });
 
     const token = generateToken(user._id, user.role);
@@ -39,7 +38,6 @@ export const register = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        phone: user.phone,
         token,
       },
     });
@@ -87,7 +85,6 @@ export const login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        phone: user.phone,
         token,
       },
     });
