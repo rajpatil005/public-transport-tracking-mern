@@ -1,26 +1,27 @@
-const express = require('express');
-const router = express.Router();
-const {
+import express from "express";
+import {
   getRoutes,
   getRouteById,
   createRoute,
   updateRoute,
   deleteRoute,
   searchRoutes,
-  initKolhapurRoutes
-} = require('../controllers/routeController');
-const { protect, authorize } = require('../middleware/auth');
+  initKolhapurRoutes,
+} from "../controllers/routeController.js";
 
-router.get('/search/:query', protect, searchRoutes);
-router.post('/init', protect, authorize('admin'), initKolhapurRoutes);
+import { protect, authorize } from "../middleware/auth.js";
 
-router.route('/')
-  .get(protect, getRoutes)
-  .post(protect, authorize('admin'), createRoute);
+const router = express.Router();
 
-router.route('/:id')
+router.get("/search/:query", protect, searchRoutes);
+router.post("/init", protect, authorize("admin"), initKolhapurRoutes);
+
+router.route("/").get(getRoutes).post(protect, authorize("admin"), createRoute);
+
+router
+  .route("/:id")
   .get(protect, getRouteById)
-  .put(protect, authorize('admin'), updateRoute)
-  .delete(protect, authorize('admin'), deleteRoute);
+  .put(protect, authorize("admin"), updateRoute)
+  .delete(protect, authorize("admin"), deleteRoute);
 
-module.exports = router;
+export default router;

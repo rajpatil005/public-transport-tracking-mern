@@ -1,49 +1,68 @@
-import React, { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { useSocket } from '../../context/SocketProvider';
+import React, { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useSocket } from "../../context/SocketProvider";
 
-// Fix default markers
 delete L.Icon.Default.prototype._getIconUrl;
+
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Bus icon
+// 🚌 Google-style Bus Icon
 const busIcon = L.icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/61/61212.png',
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
+  iconSize: [45, 45],
+  iconAnchor: [22, 45],
 });
 
-const DEFAULT_CENTER = [16.7050, 74.2433];
+// 🟢 Start Start Pin
+const startIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/128/684/684908.png",
+  iconSize: [42, 42],
+  iconAnchor: [21, 42],
+});
+
+// 🔴 Destination End Pin
+const endIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/128/535/535137.png",
+  iconSize: [42, 42],
+  iconAnchor: [21, 42],
+});
+
+const DEFAULT_CENTER = [16.705, 74.2433];
 
 const BusTracker = ({ bus }) => {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
-  const routePointsRef = useRef([]);
-  const { isConnected } = useSocket();
+  const startMarkerRef = useRef(null);
+  const endMarkerRef = useRef(null);
 
-  // ✅ Create map only once
+  const { on, off, isConnected } = useSocket();
+
+  // ✅ Initialize Map
   useEffect(() => {
     if (mapRef.current) return;
 
-    const map = L.map('bus-map', {
+    const map = L.map("bus-map", {
       center: DEFAULT_CENTER,
       zoom: 14,
-      zoomControl: true,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
     const polyline = L.polyline([], {
-      color: '#1890ff',
-      weight: 4,
+      weight: 6,
+      color: "#2563eb",
+      opacity: 0.9,
     }).addTo(map);
 
     mapRef.current = map;
@@ -55,61 +74,109 @@ const BusTracker = ({ bus }) => {
     };
   }, []);
 
-  // ✅ Update bus safely
+  // ✅ Load Real Route
+  useEffect(() => {
+    const fetchRealRoute = async () => {
+      if (!bus?.route?.stops || !mapRef.current) return;
+
+      const firstStop = bus.route.stops[0];
+      const lastStop = bus.route.stops[bus.route.stops.length - 1];
+
+      try {
+        const response = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${firstStop.lng},${firstStop.lat};${lastStop.lng},${lastStop.lat}?overview=full&geometries=geojson`,
+        );
+
+        const data = await response.json();
+        const coordinates = data.routes[0].geometry.coordinates;
+
+        const latlngs = coordinates.map((coord) => [coord[1], coord[0]]);
+
+        polylineRef.current.setLatLngs(latlngs);
+        mapRef.current.fitBounds(latlngs);
+
+        if (startMarkerRef.current)
+          mapRef.current.removeLayer(startMarkerRef.current);
+        if (endMarkerRef.current)
+          mapRef.current.removeLayer(endMarkerRef.current);
+
+        startMarkerRef.current = L.marker([firstStop.lat, firstStop.lng], {
+          icon: startIcon,
+        })
+          .addTo(mapRef.current)
+          .bindPopup(`<b>Start:</b><br/>${firstStop.name}`);
+
+        endMarkerRef.current = L.marker([lastStop.lat, lastStop.lng], {
+          icon: endIcon,
+        })
+          .addTo(mapRef.current)
+          .bindPopup(`<b>Destination:</b><br/>${lastStop.name}`);
+      } catch (error) {
+        console.error("Error fetching route:", error);
+      }
+    };
+
+    fetchRealRoute();
+  }, [bus]);
+
+  // ✅ Show Bus Safely (handles both lat/lng & latitude/longitude)
   useEffect(() => {
     if (!mapRef.current) return;
-    if (!bus?.currentLocation) return;
 
-    const lat = Number(bus.currentLocation.lat);
-    const lng = Number(bus.currentLocation.lng);
+    const lat = bus?.location?.lat ?? bus?.location?.latitude ?? null;
+    const lng = bus?.location?.lng ?? bus?.location?.longitude ?? null;
 
-    if (isNaN(lat) || isNaN(lng)) return;
+    if (!lat || !lng) return;
 
-    const newPos = [lat, lng];
+    const position = [Number(lat), Number(lng)];
 
-    // Create marker if not exists
-    if (!markerRef.current) {
-      markerRef.current = L.marker(newPos, { icon: busIcon }).addTo(mapRef.current);
-    } else {
-      markerRef.current.setLatLng(newPos);
-    }
+    if (markerRef.current) mapRef.current.removeLayer(markerRef.current);
 
-    markerRef.current.bindPopup(`
-      <b>Bus ${bus.busNumber || bus.vehicleNumber}</b><br>
-      Speed: ${bus.speed || 0} km/h<br>
-      Status: ${bus.status || 'active'}
-    `);
+    markerRef.current = L.marker(position, {
+      icon: busIcon,
+    }).addTo(mapRef.current);
 
-    // Update route trail
-    routePointsRef.current.push(newPos);
-    if (routePointsRef.current.length > 50) {
-      routePointsRef.current.shift();
-    }
+    markerRef.current.bindPopup(
+      `<b>Bus ${bus.busNumber}</b><br/>Status: ${bus.status}`,
+    );
+  }, [bus]);
 
-    if (polylineRef.current) {
-      polylineRef.current.setLatLngs(routePointsRef.current);
-    }
+  // ✅ Live Movement
+  useEffect(() => {
+    if (!bus?._id) return;
 
-    // ✅ SAFE center update (NO animation)
-    mapRef.current.setView(newPos);
+    const handler = (payload) => {
+      if (!payload || payload.busId !== bus._id) return;
 
-  }, [bus?.currentLocation]);
+      const newLat = payload.latitude ?? payload.lat;
+      const newLng = payload.longitude ?? payload.lng;
+
+      if (!markerRef.current || !newLat || !newLng) return;
+
+      markerRef.current.setLatLng([Number(newLat), Number(newLng)]);
+    };
+
+    on("busLocationUpdate", handler);
+
+    return () => {
+      off("busLocationUpdate", handler);
+    };
+  }, [bus?._id, on, off]);
 
   return (
     <div className="relative w-full h-full">
-      <div id="bus-map" style={{ height: '100%', width: '100%' }} />
+      <div id="bus-map" style={{ height: "100%", width: "100%" }} />
 
-      {/* Status Indicator */}
       <div
         className="absolute top-4 right-4 bg-white px-4 py-2 rounded shadow"
         style={{ zIndex: 1000 }}
       >
         <span
           className={`inline-block w-3 h-3 rounded-full mr-2 ${
-            isConnected ? 'bg-green-500' : 'bg-red-500'
+            isConnected ? "bg-green-500" : "bg-red-500"
           }`}
         />
-        {isConnected ? 'Live Tracking' : 'Offline'}
+        {isConnected ? "Live Tracking" : "Offline"}
       </div>
     </div>
   );

@@ -1,22 +1,21 @@
-const express = require('express');
+import express from "express";
 const router = express.Router();
-const {
+
+import {
   createBooking,
   getMyBookings,
   getBookingById,
   cancelBooking,
-  checkAvailability
-} = require('../controllers/bookingController');
-const { protect } = require('../middleware/auth');
+  checkAvailability,
+} from "../controllers/bookingController.js";
 
-router.post('/check-availability', protect, checkAvailability);
-router.get('/my-bookings', protect, getMyBookings);
+import { protect } from "../middleware/auth.js";
 
-router.route('/')
-  .post(protect, createBooking);
+router.post("/check-availability", protect, checkAvailability);
+router.get("/my-bookings", protect, getMyBookings);
 
-router.route('/:id')
-  .get(protect, getBookingById)
-  .put(protect, cancelBooking);
+router.route("/").post(protect, createBooking);
 
-module.exports = router;
+router.route("/:id").get(protect, getBookingById).put(protect, cancelBooking);
+
+export default router;

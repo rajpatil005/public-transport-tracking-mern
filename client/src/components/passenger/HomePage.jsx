@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bus,
   MapPin,
@@ -14,18 +14,18 @@ import {
   Ticket,
   Shield,
   Award,
-  ChevronRight
-} from 'lucide-react';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import Badge from '../ui/Badge';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+  ChevronRight,
+} from "lucide-react";
+import Card from "../ui/Card";
+import Button from "../ui/Button";
+import Badge from "../ui/Badge";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../services/api";
 
 const HomePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [popularRoutes, setPopularRoutes] = useState([]);
   const [nearbyBuses, setNearbyBuses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,46 +34,63 @@ const HomePage = () => {
     {
       id: 1,
       name: "Mahalaxmi Temple",
-      image: "https://www.holidify.com/images/cmsuploads/compressed/800px-Mahalaxmi_Temple_Kolhapur_20200121170459.jpg",
+      image:
+        "https://www.holidify.com/images/cmsuploads/compressed/800px-Mahalaxmi_Temple_Kolhapur_20200121170459.jpg",
       route: "101",
       stops: "5 stops",
-      fare: "₹15"
-    }
-    ,
+      fare: "₹15",
+    },
     {
       id: 2,
       name: "Rankala Lake",
-      image: "https://hblimg.mmtcdn.com/content/hubble/img/kohlapur/mmt/activities/m_Rankala%20Lake-1_l_424_640.jpg?im=Resize=(412,347.56)",
+      image:
+        "https://hblimg.mmtcdn.com/content/hubble/img/kohlapur/mmt/activities/m_Rankala%20Lake-1_l_424_640.jpg?im=Resize=(412,347.56)",
       route: "101, 104",
       stops: "4 stops",
-      fare: "₹12"
-    }
-    ,
+      fare: "₹12",
+    },
     {
       id: 3,
       name: "New Palace",
-      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQe2vopepzNjbQ8Cp487vnPwdxEBkH-ilfvWQ&s",
+      image:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQe2vopepzNjbQ8Cp487vnPwdxEBkH-ilfvWQ&s",
       route: "105",
       stops: "3 stops",
-      fare: "₹10"
+      fare: "₹10",
     },
     {
       id: 4,
       name: "Shivaji University",
-      image: "https://idealcareer.in/wp-content/uploads/2020/12/56884_app-image-shivaji1-2.jpg.webp",
+      image:
+        "https://idealcareer.in/wp-content/uploads/2020/12/56884_app-image-shivaji1-2.jpg.webp",
       route: "103",
       stops: "6 stops",
-      fare: "₹18"
-    }
-
+      fare: "₹18",
+    },
   ];
 
   // Why choose us features
   const features = [
-    { icon: Shield, title: "Safe & Secure", description: "GPS tracked buses with emergency response" },
-    { icon: Clock, title: "Punctual Service", description: "98% on-time performance guaranteed" },
-    { icon: Award, title: "Modern Fleet", description: "Well-maintained AC and standard buses" },
-    { icon: Users, title: "Professional Staff", description: "Trained drivers and support team" }
+    {
+      icon: Shield,
+      title: "Safe & Secure",
+      description: "GPS tracked buses with emergency response",
+    },
+    {
+      icon: Clock,
+      title: "Punctual Service",
+      description: "98% on-time performance guaranteed",
+    },
+    {
+      icon: Award,
+      title: "Modern Fleet",
+      description: "Well-maintained AC and standard buses",
+    },
+    {
+      icon: Users,
+      title: "Professional Staff",
+      description: "Trained drivers and support team",
+    },
   ];
 
   useEffect(() => {
@@ -82,17 +99,38 @@ const HomePage = () => {
 
   const fetchData = async () => {
     try {
-      const routesRes = await api.get('/routes');
+      const routesRes = await api.get("/api/routes");
       setPopularRoutes(routesRes.data.data?.slice(0, 4) || []);
 
       // Mock nearby buses data
       setNearbyBuses([
-        { id: 1, busNumber: "MH09-1234", route: "CBS → Rankala", eta: 5, distance: 1.2, occupancy: 65 },
-        { id: 2, busNumber: "MH09-5678", route: "Shahupuri → JN", eta: 8, distance: 1.8, occupancy: 80 },
-        { id: 3, busNumber: "MH09-9101", route: "Tarabai Park → Kagal", eta: 12, distance: 2.5, occupancy: 45 }
+        {
+          id: 1,
+          busNumber: "MH09-1234",
+          route: "CBS → Rankala",
+          eta: 5,
+          distance: 1.2,
+          occupancy: 65,
+        },
+        {
+          id: 2,
+          busNumber: "MH09-5678",
+          route: "Shahupuri → JN",
+          eta: 8,
+          distance: 1.8,
+          occupancy: 80,
+        },
+        {
+          id: 3,
+          busNumber: "MH09-9101",
+          route: "Tarabai Park → Kagal",
+          eta: 12,
+          distance: 2.5,
+          occupancy: 45,
+        },
       ]);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -106,12 +144,48 @@ const HomePage = () => {
   };
 
   const quickActions = [
-    { icon: MapPin, label: 'Nearby Stops', color: 'bg-blue-500', href: '/nearby-stops', count: '8 stops' },
-    { icon: Clock, label: 'Schedule', color: 'bg-green-500', href: '/schedule', count: '24/7' },
-    { icon: Bus, label: 'Track Bus', color: 'bg-purple-500', href: '/track-bus/1', count: 'Live' },
-    { icon: Calendar, label: 'Bookings', color: 'bg-orange-500', href: '/my-bookings', count: 'Manage' },
-    { icon: Info, label: 'Kolhapur Info', color: 'bg-red-500', href: '/kolhapur-info', count: 'Guide' },
-    { icon: Ticket, label: 'Book Ticket', color: 'bg-indigo-500', href: '/search', count: 'Now' }
+    {
+      icon: MapPin,
+      label: "Nearby Stops",
+      color: "bg-blue-500",
+      href: "/nearby-stops",
+      count: "8 stops",
+    },
+    {
+      icon: Clock,
+      label: "Schedule",
+      color: "bg-green-500",
+      href: "/schedule",
+      count: "24/7",
+    },
+    {
+      icon: Bus,
+      label: "Track Bus",
+      color: "bg-purple-500",
+      href: "/track-bus/1",
+      count: "Live",
+    },
+    {
+      icon: Calendar,
+      label: "Bookings",
+      color: "bg-orange-500",
+      href: "/my-bookings",
+      count: "Manage",
+    },
+    {
+      icon: Info,
+      label: "Kolhapur Info",
+      color: "bg-red-500",
+      href: "/kolhapur-info",
+      count: "Guide",
+    },
+    {
+      icon: Ticket,
+      label: "Book Ticket",
+      color: "bg-indigo-500",
+      href: "/search",
+      count: "Now",
+    },
   ];
 
   return (
@@ -121,7 +195,8 @@ const HomePage = () => {
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=80')"
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?ixlib=rb-4.0.3&auto=format&fit=crop&w=2069&q=80')",
           }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50"></div>
@@ -130,10 +205,15 @@ const HomePage = () => {
           <div className="text-white max-w-3xl">
             <div className="flex items-center space-x-2 mb-4">
               <Bus className="h-8 w-8 text-yellow-400" />
-              <span className="text-sm font-semibold tracking-wider text-yellow-400">KOLHAPUR CITY TRANSPORT</span>
+              <span className="text-sm font-semibold tracking-wider text-yellow-400">
+                KOLHAPUR CITY TRANSPORT
+              </span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-4">
-              Welcome Back, <span className="text-yellow-400">{user?.name?.split(' ')[0] || 'Passenger'}!</span>
+              Welcome Back,{" "}
+              <span className="text-yellow-400">
+                {user?.name?.split(" ")[0] || "Passenger"}!
+              </span>
             </h1>
             <p className="text-xl text-gray-200 mb-8">
               Smart, Safe & Reliable Public Transport for Kolhapur City
@@ -188,7 +268,9 @@ const HomePage = () => {
               className="cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
             >
               <Card.Body className="p-4 text-center">
-                <div className={`inline-flex p-3 rounded-full ${action.color} text-white mb-2`}>
+                <div
+                  className={`inline-flex p-3 rounded-full ${action.color} text-white mb-2`}
+                >
                   <action.icon className="h-5 w-5" />
                 </div>
                 <h3 className="text-sm font-medium">{action.label}</h3>
@@ -204,8 +286,10 @@ const HomePage = () => {
         {/* Featured Destinations */}
         <div className="mb-12">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Popular Destinations</h2>
-            <Button variant="ghost" onClick={() => navigate('/search')}>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Popular Destinations
+            </h2>
+            <Button variant="ghost" onClick={() => navigate("/search")}>
               View All <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
@@ -234,7 +318,9 @@ const HomePage = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <Badge variant="success">{dest.fare}</Badge>
-                    <Button size="sm" variant="ghost">Book Now</Button>
+                    <Button size="sm" variant="ghost">
+                      Book Now
+                    </Button>
                   </div>
                 </Card.Body>
               </Card>
@@ -262,10 +348,14 @@ const HomePage = () => {
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-semibold">Route {route.routeNumber}</h3>
+                          <h3 className="font-semibold">
+                            Route {route.routeNumber}
+                          </h3>
                           <p className="text-sm text-gray-600">{route.name}</p>
                         </div>
-                        <span className="text-lg font-bold text-blue-600">₹{route.fare}</span>
+                        <span className="text-lg font-bold text-blue-600">
+                          ₹{route.fare}
+                        </span>
                       </div>
                       <div className="mt-2 flex items-center text-sm text-gray-500">
                         <MapPin className="h-4 w-4 mr-1" />
@@ -306,22 +396,34 @@ const HomePage = () => {
                           <p className="text-sm text-gray-600">{bus.route}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-blue-600">{bus.eta} min</p>
-                          <p className="text-xs text-gray-500">{bus.distance} km away</p>
+                          <p className="text-lg font-bold text-blue-600">
+                            {bus.eta} min
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {bus.distance} km away
+                          </p>
                         </div>
                       </div>
                       <div className="mt-2">
                         <div className="flex items-center">
-                          <span className="text-xs text-gray-600 mr-2">Occupancy:</span>
+                          <span className="text-xs text-gray-600 mr-2">
+                            Occupancy:
+                          </span>
                           <div className="flex-1 h-2 bg-gray-200 rounded-full">
                             <div
-                              className={`h-2 rounded-full ${bus.occupancy > 80 ? 'bg-red-500' :
-                                bus.occupancy > 50 ? 'bg-yellow-500' : 'bg-green-500'
-                                }`}
+                              className={`h-2 rounded-full ${
+                                bus.occupancy > 80
+                                  ? "bg-red-500"
+                                  : bus.occupancy > 50
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              }`}
                               style={{ width: `${bus.occupancy}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs text-gray-600 ml-2">{bus.occupancy}%</span>
+                          <span className="text-xs text-gray-600 ml-2">
+                            {bus.occupancy}%
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -364,10 +466,15 @@ const HomePage = () => {
 
         {/* Why Choose Us Section */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Why Choose Kolhapur Bus Transport?</h2>
+          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
+            Why Choose Kolhapur Bus Transport?
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <Card key={index} className="text-center p-6 hover:shadow-xl transition-all">
+              <Card
+                key={index}
+                className="text-center p-6 hover:shadow-xl transition-all"
+              >
                 <div className="inline-flex p-3 bg-blue-100 rounded-full mb-4">
                   <feature.icon className="h-6 w-6 text-blue-600" />
                 </div>
@@ -387,13 +494,12 @@ const HomePage = () => {
             </p>
 
             <div className="flex justify-center space-x-4">
-
               {/* BOOK NOW – SAME AS VIEW SCHEDULE */}
               <Button
                 variant="outline"
                 size="lg"
                 className="border-white text-white hover:bg-white/20 font-semibold"
-                onClick={() => navigate('/search')}
+                onClick={() => navigate("/search")}
               >
                 <Ticket className="h-5 w-5 mr-2" />
                 Book Now
@@ -404,16 +510,14 @@ const HomePage = () => {
                 variant="outline"
                 size="lg"
                 className="border-white text-white hover:bg-white/20 font-semibold"
-                onClick={() => navigate('/schedule')}
+                onClick={() => navigate("/schedule")}
               >
                 <Clock className="h-5 w-5 mr-2" />
                 View Schedule
               </Button>
-
             </div>
           </Card.Body>
         </Card>
-
       </div>
     </div>
   );

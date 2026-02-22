@@ -1,71 +1,78 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
   bookingId: {
     type: String,
-    unique: true
+    unique: true,
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
   },
   busId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Bus',
-    required: true
+    ref: "Bus",
+    required: true,
   },
   routeId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Route',
-    required: true
+    ref: "Route",
+    required: true,
   },
-  seats: [{
-    seatNumber: Number,
-    passengerName: String,
-    passengerAge: Number,
-    passengerGender: String
-  }],
+  seats: [
+    {
+      seatNumber: Number,
+      passengerName: String,
+      passengerAge: Number,
+      passengerGender: String,
+    },
+  ],
   totalFare: {
     type: Number,
-    required: true
+    required: true,
   },
   bookingDate: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   travelDate: {
     type: Date,
-    required: true
+    required: true,
   },
   departureTime: {
     type: String,
-    required: true
+    required: true,
   },
   status: {
     type: String,
-    enum: ['confirmed', 'cancelled', 'completed', 'pending'],
-    default: 'confirmed'
+    enum: ["confirmed", "cancelled", "completed", "pending"],
+    default: "confirmed",
   },
   paymentId: String,
   paymentMethod: {
     type: String,
-    enum: ['cash', 'card', 'upi', 'wallet'],
-    default: 'cash'
+    enum: ["cash", "card", "upi", "wallet"],
+    default: "cash",
   },
-  qrCode: String
+  qrCode: String,
 });
 
 // Generate booking ID before saving
-bookingSchema.pre('save', async function(next) {
+bookingSchema.pre("save", async function (next) {
   if (!this.bookingId) {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
+
     this.bookingId = `KBT${year}${month}${random}`;
   }
   next();
 });
 
-module.exports = mongoose.model('Booking', bookingSchema);
+const Booking = mongoose.model("Booking", bookingSchema);
+
+export default Booking;

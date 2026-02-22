@@ -1,19 +1,21 @@
-const User = require("../models/User");
-const jwt = require("jsonwebtoken");
+import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 
 // Generate JWT Token
 const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: "30d" });
+  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
 };
 
 // @desc    Register user
 // @route   POST /api/auth/register
-exports.register = async (req, res) => {
+export const register = async (req, res) => {
   try {
     const { name, email, password, phone } = req.body;
 
-    // Check if user exists
     const userExists = await User.findOne({ email });
+
     if (userExists) {
       return res.status(400).json({
         success: false,
@@ -21,7 +23,6 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create user
     const user = await User.create({
       name,
       email,
@@ -29,7 +30,6 @@ exports.register = async (req, res) => {
       phone,
     });
 
-    // Generate token
     const token = generateToken(user._id, user.role);
 
     res.status(201).json({
@@ -53,12 +53,12 @@ exports.register = async (req, res) => {
 
 // @desc    Login user
 // @route   POST /api/auth/login
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check for user
     const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -66,8 +66,8 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check password
     const isPasswordValid = await user.comparePassword(password);
+
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -75,11 +75,9 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Update last login
     user.lastLogin = Date.now();
     await user.save();
 
-    // Generate token
     const token = generateToken(user._id, user.role);
 
     res.json({
@@ -103,9 +101,10 @@ exports.login = async (req, res) => {
 
 // @desc    Get current user
 // @route   GET /api/auth/me
-exports.getMe = async (req, res) => {
+export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
+
     res.json({
       success: true,
       data: user,

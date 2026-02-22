@@ -1,30 +1,30 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const liveLocationSchema = new mongoose.Schema({
   busId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Bus',
-    required: true
+    ref: "Bus",
+    required: true,
   },
   routeId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Route'
+    ref: "Route",
   },
   latitude: {
     type: Number,
-    required: true
+    required: true,
   },
   longitude: {
     type: Number,
-    required: true
+    required: true,
   },
   speed: {
     type: Number,
-    default: 0
+    default: 0,
   },
   heading: {
     type: Number,
-    default: 0
+    default: 0,
   },
   nextStop: String,
   stopsAway: Number,
@@ -33,15 +33,17 @@ const liveLocationSchema = new mongoose.Schema({
     type: Number,
     min: 0,
     max: 100,
-    default: 0
+    default: 0,
   },
   timestamp: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 // Index for automatic deletion after 1 hour
 liveLocationSchema.index({ timestamp: 1 }, { expireAfterSeconds: 3600 });
 
-module.exports = mongoose.model('LiveLocation', liveLocationSchema);
+const LiveLocation = mongoose.model("LiveLocation", liveLocationSchema);
+
+export default LiveLocation;

@@ -1,37 +1,72 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bus, Mail, Lock, LogIn, Shield } from "lucide-react";
+import { Mail, Lock, Bus } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import Button from "../ui/Button";
-import Card from "../ui/Card";
-import Input from "../ui/Input";
-import Alert from "../ui/Alert";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [currentImage, setCurrentImage] = useState(0);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const backgroundImages = [
-    "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=2070&q=80",
-    "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=2070&q=80",
-    "https://images.unsplash.com/photo-1580674285054-bed31e145f4d?auto=format&fit=crop&w=2070&q=80",
-    "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=2070&q=80"
-  ];
+  /* ---------------- SMART EMAIL VALIDATION ---------------- */
+  const getEmailError = (email) => {
+    if (!email) return "Email is required.";
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % backgroundImages.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!email.includes("@")) {
+      return "Please include an '@' in the email address.";
+    }
+
+    const [localPart, domain] = email.split("@");
+
+    if (!localPart) {
+      return "Email address is missing text before '@'.";
+    }
+
+    if (!domain) {
+      return `'${email}' is missing a domain after '@'.`;
+    }
+
+    if (!domain.includes(".")) {
+      return `'${email}' is missing a top-level domain (like .com).`;
+    }
+
+    const parts = domain.split(".");
+    if (parts[parts.length - 1].length < 2) {
+      return "Domain extension must be at least 2 characters.";
+    }
+
+    return "";
+  };
+
+  const validate = () => {
+    const errors = {};
+
+    const emailError = getEmailError(formData.email);
+    if (emailError) errors.email = emailError;
+
+    if (!formData.password) {
+      errors.password = "Password is required.";
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
+    }
+
+    return errors;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setValidationErrors({});
     setError("");
     setLoading(true);
 
@@ -39,110 +74,168 @@ const Login = () => {
       await login(formData.email, formData.password);
       navigate("/home");
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || "Login failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="min-h-screen relative bg-gradient-to-br from-slate-800 via-blue-900 to-indigo-900 overflow-hidden">
+      {/* ABSTRACT BUS BACKGROUND */}
+      <div className="absolute bottom-16 left-10 w-80 h-28 bg-blue-500/40 rounded-2xl"></div>
+      <div className="absolute bottom-12 left-24 w-12 h-12 bg-slate-900/70 rounded-full"></div>
+      <div className="absolute bottom-12 left-64 w-12 h-12 bg-slate-900/70 rounded-full"></div>
+      <div className="absolute top-20 right-10 w-72 h-24 bg-indigo-400/40 rounded-2xl"></div>
 
-      {/* Background Carousel */}
-      {backgroundImages.map((img, index) => (
-        <div
-          key={index}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            index === currentImage ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${img})` }}
-          >
-            <div className="absolute inset-0 bg-black/60" />
+      <div className="relative z-10 flex min-h-screen items-center justify-center max-w-6xl mx-auto">
+        {/* LEFT SIDE */}
+        <div className="w-1/2 text-white pr-16">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-4 bg-white/20 rounded-full">
+              <Bus size={36} />
+            </div>
+            <h1 className="text-4xl font-bold">Kolhapur Bus Tracking</h1>
+          </div>
+          <p className="text-lg mb-4">
+            Smart real-time public transport tracking system.
+          </p>
+          <p className="opacity-90">
+            Track buses live, reduce waiting time, and experience efficient
+            travel.
+          </p>
+        </div>
+
+        {/* RIGHT SIDE CARD */}
+        <div className="w-1/2 flex justify-center">
+          <div className="relative w-full max-w-md p-10 rounded-3xl bg-white/10 border border-white/30 shadow-xl overflow-hidden">
+            {/* Card reflection */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-white/10 to-transparent pointer-events-none"></div>
+
+            <div className="relative z-10">
+              <h2 className="text-3xl font-bold text-gray-800 mb-8">Sign In</h2>
+
+              {error && (
+                <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* 🔥 noValidate disables browser popup */}
+              <form onSubmit={handleSubmit} noValidate className="space-y-6">
+                {/* EMAIL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+
+                  <div className="relative mt-2">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+                    <input
+                      type="text" /* changed from email to text */
+                      value={formData.email}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData({ ...formData, email: value });
+
+                        const emailError = getEmailError(value);
+                        setValidationErrors((prev) => ({
+                          ...prev,
+                          email: emailError,
+                        }));
+                      }}
+                      className={`w-full pl-12 pr-4 py-3 rounded-xl bg-white/60 border transition-all duration-300
+                        ${
+                          validationErrors.email
+                            ? "border-red-500 ring-2 ring-red-300"
+                            : "border-white/40 focus:ring-2 focus:ring-indigo-500"
+                        }`}
+                      placeholder="Enter your email"
+                    />
+                  </div>
+
+                  {validationErrors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {validationErrors.email}
+                    </p>
+                  )}
+                </div>
+
+                {/* PASSWORD */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+
+                  <div className="relative mt-2">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData({ ...formData, password: value });
+
+                        if (!value) {
+                          setValidationErrors((prev) => ({
+                            ...prev,
+                            password: "Password is required.",
+                          }));
+                        } else if (value.length < 6) {
+                          setValidationErrors((prev) => ({
+                            ...prev,
+                            password: "Password must be at least 6 characters.",
+                          }));
+                        } else {
+                          setValidationErrors((prev) => ({
+                            ...prev,
+                            password: "",
+                          }));
+                        }
+                      }}
+                      className={`w-full pl-12 pr-4 py-3 rounded-xl bg-white/60 border transition-all duration-300
+                        ${
+                          validationErrors.password
+                            ? "border-red-500 ring-2 ring-red-300"
+                            : "border-white/40 focus:ring-2 focus:ring-indigo-500"
+                        }`}
+                      placeholder="••••••••"
+                    />
+                  </div>
+
+                  {validationErrors.password && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {validationErrors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* BUTTON */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-2xl font-bold text-white 
+                  bg-gradient-to-r from-indigo-600 to-blue-700 
+                  transition-all duration-300 
+                  hover:shadow-xl hover:scale-[1.02] 
+                  active:scale-95 disabled:opacity-70"
+                >
+                  {loading ? "Signing In..." : "Login"}
+                </button>
+              </form>
+
+              <p className="text-sm mt-6 text-gray-800">
+                Don’t have an account?{" "}
+                <Link
+                  to="/register"
+                  className="font-semibold text-indigo-700 hover:underline"
+                >
+                  Register
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
-      ))}
-
-   
-     
-
-      {/* Login Card */}
-      <div className="relative z-20 w-full max-w-md px-6">
-        <Card className="bg-white/90 backdrop-blur-lg shadow-2xl">
-          <div className="text-center mb-6">
-            <div className="inline-flex p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl mb-4">
-              <Bus className="h-8 w-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold">Welcome Back</h2>
-            <p className="text-gray-600 text-sm">
-              Login to access Kolhapur Bus Services
-            </p>
-          </div>
-
-          {error && (
-            <Alert
-              type="error"
-              message={error}
-              onClose={() => setError("")}
-              className="mb-4"
-            />
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              type="email"
-              name="email"
-              label="Email"
-              icon={Mail}
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-              required
-            />
-
-            <Input
-              type="password"
-              name="password"
-              label="Password"
-              icon={Lock}
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              required
-            />
-
-            <Button
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading}
-            >
-              <LogIn className="h-5 w-5 mr-2" />
-              Sign In
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm">
-            <Link to="/register" className="text-blue-600 font-medium">
-              Create New Account
-            </Link>
-          </div>
-
-          {/* Demo Accounts */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border">
-            <p className="text-sm font-medium text-blue-800 flex items-center mb-2">
-              <Shield className="h-4 w-4 mr-1" />
-              Demo Access
-            </p>
-            <p className="text-xs">Passenger: passenger@test.com</p>
-            <p className="text-xs">Admin: admin@test.com</p>
-            <p className="text-xs">Driver: driver@test.com</p>
-          </div>
-        </Card>
       </div>
     </div>
   );

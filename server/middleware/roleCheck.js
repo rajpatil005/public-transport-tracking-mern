@@ -1,17 +1,16 @@
-// Role-based access control middleware
-const authorize = (...roles) => {
+export const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        message: 'Authentication required'
+        message: "Authentication required",
       });
     }
 
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Access denied. Required roles: ${roles.join(', ')}`
+        message: `Access denied. Required roles: ${roles.join(", ")}`,
       });
     }
 
@@ -19,101 +18,86 @@ const authorize = (...roles) => {
   };
 };
 
-// Check if user is admin
-const isAdmin = (req, res, next) => {
+export const isAdmin = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Authentication required'
+      message: "Authentication required",
     });
   }
 
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== "admin") {
     return res.status(403).json({
       success: false,
-      message: 'Admin access required'
+      message: "Admin access required",
     });
   }
 
   next();
 };
 
-// Check if user is driver
-const isDriver = (req, res, next) => {
+export const isDriver = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Authentication required'
+      message: "Authentication required",
     });
   }
 
-  if (req.user.role !== 'driver') {
+  if (req.user.role !== "driver") {
     return res.status(403).json({
       success: false,
-      message: 'Driver access required'
+      message: "Driver access required",
     });
   }
 
   next();
 };
 
-// Check if user is passenger
-const isPassenger = (req, res, next) => {
+export const isPassenger = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
       success: false,
-      message: 'Authentication required'
+      message: "Authentication required",
     });
   }
 
-  if (req.user.role !== 'passenger') {
+  if (req.user.role !== "passenger") {
     return res.status(403).json({
       success: false,
-      message: 'Passenger access required'
+      message: "Passenger access required",
     });
   }
 
   next();
 };
 
-// Check if user owns the resource or is admin
-const isOwnerOrAdmin = (getUserIdFromResource) => {
+export const isOwnerOrAdmin = (getUserIdFromResource) => {
   return async (req, res, next) => {
     try {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Authentication required'
+          message: "Authentication required",
         });
       }
 
-      // Admin can access any resource
-      if (req.user.role === 'admin') {
+      if (req.user.role === "admin") {
         return next();
       }
 
-      // Get resource owner ID
       const resourceUserId = await getUserIdFromResource(req);
-      
-      // Check if user owns the resource
+
       if (resourceUserId && resourceUserId.toString() === req.user.id) {
         return next();
       }
 
       return res.status(403).json({
         success: false,
-        message: 'You do not have permission to access this resource'
+        message: "You do not have permission to access this resource",
       });
     } catch (error) {
       next(error);
     }
   };
-};
-
-module.exports = {
-  authorize,
-  isAdmin,
-  isDriver,
-  isPassenger,
-  isOwnerOrAdmin
 };

@@ -1,4 +1,4 @@
-// client/src/context/AuthContext.js
+// client/src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from "react";
 import api from "../services/api";
 
@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };
@@ -15,7 +15,33 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+
+  /* ===============================
+     FETCH CURRENT USER
+  =============================== */
+  const fetchUser = async () => {
+    try {
+      const storedToken = localStorage.getItem("token");
+
+      if (!storedToken) return;
+
+      const response = await api.get("/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+        },
+      });
+
+      setUser(response.data.data);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (token) {
@@ -25,43 +51,44 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  const fetchUser = async () => {
-    try {
-      const response = await api.get("/auth/me");
-      setUser(response.data.data); // ✅ matches backend
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      localStorage.removeItem("token");
-      setToken(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /* ===============================
+     LOGIN
+  =============================== */
   const login = async (email, password) => {
-    const response = await api.post("/auth/login", { email, password });
+    const response = await api.post("/api/auth/login", {
+      email,
+      password,
+    });
 
-    const { token, ...userData } = response.data.data; // ✅ matches backend
+    const data = response.data.data;
+    const token = data.token;
 
     localStorage.setItem("token", token);
     setToken(token);
-    setUser(userData);
+    setUser(data);
 
     return response.data;
   };
 
+  /* ===============================
+     REGISTER  ✅ FIXED
+  =============================== */
   const register = async (userData) => {
-    const response = await api.post("/auth/register", userData);
+    const response = await api.post("/api/auth/register", userData);
 
-    const { token, ...newUser } = response.data.data; // ✅ matches backend
+    const data = response.data.data;
+    const token = data.token;
 
     localStorage.setItem("token", token);
     setToken(token);
-    setUser(newUser);
+    setUser(data);
 
     return response.data;
   };
 
+  /* ===============================
+     LOGOUT
+  =============================== */
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -78,3 +105,5 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export default AuthContext;

@@ -1,19 +1,24 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const busSchema = new mongoose.Schema({
-  busNumber: { type: String, required: true, unique: true },
-  driverName: String,
-  capacity: Number,
-  route: { type: mongoose.Schema.Types.ObjectId, ref: "Route" },
-  location: {
-    lat: Number,
-    lng: Number
+const busSchema = new mongoose.Schema(
+  {
+    busNumber: { type: String, required: true, unique: true },
+    driverName: String,
+    capacity: Number,
+    route: { type: mongoose.Schema.Types.ObjectId, ref: "Route" },
+    location: {
+      lat: Number,
+      lng: Number,
+    },
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE"],
+      default: "ACTIVE",
+    },
   },
-  status: {
-    type: String,
-    enum: ["ACTIVE", "INACTIVE"],
-    default: "ACTIVE"
-  }
-}, { timestamps: true });
+  { timestamps: true },
+);
 
-module.exports = mongoose.model("Bus", busSchema);
+const Bus = mongoose.model("Bus", busSchema);
+
+export default Bus;
