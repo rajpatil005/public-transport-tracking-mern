@@ -1,50 +1,71 @@
-import Route from "../models/Route.js";
+// import Route from "../models/Route.js";
 
-export const initializeTrackingEngine = (io) => {
-  let pathPoints = [];
-  let index = 0;
+// export const initializeSocket = (io) => {
+//   let routeCoordinates = [];
+//   let currentIndex = 0;
 
-  async function loadPath() {
-    try {
-      const route = await Route.findOne();
+//   /* Load Route Path */
+//   async function loadRoutePath() {
+//     try {
+//       const route = await Route.findOne();
 
-      if (!route?.path?.length) return;
+//       if (!route?.path?.length) {
+//         console.log("❌ No route path found");
+//         return;
+//       }
 
-      pathPoints = route.path.map((p) => ({
-        lat: Number(p.lat),
-        lng: Number(p.lng),
-      }));
+//       routeCoordinates = route.path.map((p) => ({
+//         lat: Number(p.lat),
+//         lng: Number(p.lng),
+//       }));
 
-      console.log("✅ Tracking Path Loaded →", pathPoints.length);
+//       console.log("✅ Socket Path Loaded →", routeCoordinates.length, "nodes");
+//     } catch (err) {
+//       console.error("Route Load Error:", err.message);
+//     }
+//   }
 
-      startEngine();
-    } catch (err) {
-      console.error(err.message);
-    }
-  }
+//   loadRoutePath();
 
-  function startEngine() {
-    setInterval(() => {
-      if (pathPoints.length < 2) return;
+//   /* Socket Connection */
 
-      const point = pathPoints[index];
+//   io.on("connection", (socket) => {
+//     console.log("✅ Socket Connected:", socket.id);
 
-      io.to("MH09-1234").emit("bus-location-update", {
-        busId: "MH09-1234",
-        latitude: point.lat,
-        longitude: point.lng,
-      });
+//     socket.on("track-bus", (busId) => {
+//       socket.join(busId);
+//       console.log("👀 Tracking Room Joined →", busId);
+//     });
 
-      index++;
+//     /* ⭐ Movement Engine */
 
-      if (index >= pathPoints.length) index = 0;
-    }, 220);
-  }
+//     let movementInterval = setInterval(() => {
+//       if (!routeCoordinates.length) return;
 
-  io.on("connection", (socket) => {
-    socket.join("MH09-1234");
-    console.log("✅ Socket Connected:", socket.id);
-  });
+//       const busId = "MH09-1234";
 
-  loadPath();
-};
+//       const path = routeCoordinates;
+
+//       const point = path[currentIndex];
+
+//       if (!point) return;
+
+//       io.to(busId).emit("bus-location-update", {
+//         busId,
+//         latitude: point.lat,
+//         longitude: point.lng,
+//       });
+
+//       currentIndex++;
+
+//       if (currentIndex >= path.length) {
+//         currentIndex = 0;
+//       }
+//     }, 180);
+
+//     socket.on("disconnect", () => {
+//       console.log("❌ Socket Disconnected:", socket.id);
+//       clearInterval(movementInterval);
+//     });
+//   });
+// };

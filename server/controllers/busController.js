@@ -117,14 +117,12 @@ export const updateLocation = async (req, res) => {
       });
     }
 
-    // ✅ GLOBAL EVENT (MATCH FRONTEND)
+    /* 🔥 MATCH FRONTEND EVENT NAME */
     if (io) {
-      io.emit("busLocationUpdate", {
-        busId: bus._id,
-        busNumber: bus.busNumber,
+      io.to(busNumber).emit("bus-location-update", {
+        busId: bus.busNumber,
         latitude: lat,
         longitude: lng,
-        status: bus.status,
       });
     }
 

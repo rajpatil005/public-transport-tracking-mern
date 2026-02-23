@@ -34,22 +34,11 @@ export const SocketProvider = ({ children }) => {
     return () => socket.disconnect();
   }, []);
 
-  const on = (event, cb) => {
-    socketRef.current?.on(event, cb);
-
-    return () => socketRef.current?.off(event, cb);
-  };
-
-  const off = (event, cb) => {
-    socketRef.current?.off(event, cb);
-  };
-
   return (
     <SocketContext.Provider
       value={{
+        socket: socketRef.current, // 🔥 IMPORTANT FIX
         isConnected,
-        on,
-        off,
       }}
     >
       {children}

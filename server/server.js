@@ -12,7 +12,7 @@ import busRoutes from "./routes/busRoutes.js";
 import routeRoutes from "./routes/routeRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 
-import Route from "./models/Route.js";
+import { startTrackingEngine } from "./services/trackingEngine.js";
 
 dotenv.config();
 connectDB();
@@ -29,14 +29,14 @@ app.use(
   }),
 );
 
-/* Routes */
+/* ================= ROUTES ================= */
 
 app.use("/api/auth", authRoutes);
 app.use("/api/buses", busRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/booking", bookingRoutes);
 
-/* Socket Server */
+/* ================= SOCKET SERVER ================= */
 
 const server = http.createServer(app);
 
@@ -46,70 +46,32 @@ const io = new Server(server, {
   },
 });
 
-/* Tracking Engine */
+app.set("io", io);
 
-let pathPoints = [];
-let index = 0;
-
-const SPEED = 0.00005;
-
-async function loadPath() {
-  try {
-    const route = await Route.findOne();
-
-    if (!route?.path?.length) return;
-
-    pathPoints = route.path.map((p) => ({
-      lat: Number(p.lat),
-      lng: Number(p.lng),
-    }));
-
-    console.log("✅ Tracking Path Loaded →", pathPoints.length);
-
-    startEngine();
-  } catch (err) {
-    console.error(err.message);
-  }
-}
-
-function startEngine() {
-  setInterval(() => {
-    if (pathPoints.length < 2) return;
-
-    const point = pathPoints[index];
-
-    io.to("MH09-1234").emit("bus-location-update", {
-      busId: "MH09-1234",
-      latitude: point.lat,
-      longitude: point.lng,
-    });
-
-    index++;
-
-    if (index >= pathPoints.length) index = 0;
-  }, 220);
-}
-
-/* Socket Connection */
+/* ================= SOCKET CONNECTION ================= */
 
 io.on("connection", (socket) => {
   console.log("✅ Socket Connected:", socket.id);
 
   socket.join("MH09-1234");
+
+  socket.on("disconnect", () => {
+    console.log("❌ Socket Disconnected:", socket.id);
+  });
 });
 
-/* Error Handler */
+/* ================= START TRACKING ENGINE ================= */
+
+startTrackingEngine(io);
+
+/* ================= ERROR HANDLER ================= */
 
 app.use(errorHandler);
 
-/* Server Start */
+/* ================= SERVER START ================= */
 
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-/* Load Path */
-
-loadPath();
