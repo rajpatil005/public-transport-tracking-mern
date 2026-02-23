@@ -1,4 +1,3 @@
-// client/src/context/SocketProvider.jsx
 import React, {
   createContext,
   useContext,
@@ -8,15 +7,13 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { io } from "socket.io-client"; // ✅ FIXED IMPORT
+import { io } from "socket.io-client";
 
 const SocketContext = createContext(null);
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
-  if (!context) {
-    throw new Error("useSocket must be used within SocketProvider");
-  }
+  if (!context) throw new Error("useSocket must be used within SocketProvider");
   return context;
 };
 
@@ -26,18 +23,11 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socketUrl =
-      process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
-
-    console.log("🔌 Connecting socket →", socketUrl);
-
-    const socket = io(socketUrl, {
-      transports: ["websocket"], // ✅ force websocket (prevents polling bugs)
+    const socket = io("http://127.0.0.1:5000", {
+      transports: ["websocket"],
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 10000,
-      withCredentials: true,
+      reconnectionDelay: 1500,
+      reconnectionAttempts: 10,
     });
 
     socketRef.current = socket;
@@ -53,50 +43,29 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(false);
     });
 
-    socket.on("connect_error", (err) => {
-      console.log("⚠️ Socket Connection Error:", err.message);
+    socket.on("connect_error", () => {
       setIsConnected(false);
     });
 
     return () => {
-      console.log("🔌 Socket Cleanup Triggered");
-
-      socket.removeAllListeners();
       socket.disconnect();
-
-      socketRef.current = null;
-      setSocketInstance(null);
     };
   }, []);
 
-  const emit = useCallback(
-    (event, data, callback) => {
-      const socket = socketRef.current;
-
-      if (socket && isConnected) {
-        socket.emit(event, data, callback);
-        return true;
-      }
-
-      console.warn("⚠️ Socket emit failed — not connected");
-      return false;
-    },
-    [isConnected],
-  );
+  const emit = useCallback((event, data) => {
+    socketRef.current?.emit(event, data);
+  }, []);
 
   const on = useCallback((event, callback) => {
-    const socket = socketRef.current;
+    socketRef.current?.on(event, callback);
 
-    if (!socket) return () => {};
-
-    socket.on(event, callback);
-
-    return () => socket.off(event, callback);
+    return () => {
+      socketRef.current?.off(event, callback);
+    };
   }, []);
 
   const off = useCallback((event, callback) => {
-    const socket = socketRef.current;
-    if (socket) socket.off(event, callback);
+    socketRef.current?.off(event, callback);
   }, []);
 
   const value = useMemo(
@@ -106,7 +75,6 @@ export const SocketProvider = ({ children }) => {
       emit,
       on,
       off,
-      socketId: socketInstance?.id,
     }),
     [socketInstance, isConnected, emit, on, off],
   );

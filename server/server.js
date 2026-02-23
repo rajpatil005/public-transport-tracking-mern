@@ -19,8 +19,7 @@ connectDB();
 
 const app = express();
 
-/* ================= MIDDLEWARE ================= */
-
+/* Middleware */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,14 +30,13 @@ app.use(
   }),
 );
 
-/* ================= ROUTES ================= */
-
+/* Routes */
 app.use("/api/auth", authRoutes);
 app.use("/api/buses", busRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/booking", bookingRoutes);
 
-/* ================= SERVER SOCKET ================= */
+/* Socket Server */
 
 const server = http.createServer(app);
 
@@ -52,83 +50,74 @@ const io = new Server(server, {
 /* ================= TRACKING ENGINE ================= */
 
 let routeCoordinates = [];
-let currentIndex = 0;
-let step = 0;
+let simulationTimer = null;
 
-const stepsPerSegment = 25;
+/* ⭐ REALISTIC MOTION PHYSICS */
+const SPEED = 0.00012;
 
-/* Load Route Path */
-
+/* Load Path */
 async function loadRoute() {
   try {
     const route = await Route.findOne();
 
-    if (!route || !route.path || route.path.length === 0) {
-      console.log("❌ No route path found");
-      return;
-    }
+    if (!route?.path?.length) return;
 
     routeCoordinates = route.path.map((p) => [p.lat, p.lng]);
 
-    console.log("✅ Tracking Path Loaded →", routeCoordinates.length, "nodes");
+    console.log("✅ Tracking Path Loaded →", routeCoordinates.length);
 
-    startSimulation();
+    if (!simulationTimer) startSimulation();
   } catch (err) {
-    console.error("Route load error:", err.message);
+    console.log(err.message);
   }
 }
 
-/* ⭐ Smooth OSRM Path Simulation Engine */
-
-let timer;
+/* ⭐ Production Grade Smooth Engine */
 
 function startSimulation() {
-  if (!routeCoordinates.length) return;
+  if (routeCoordinates.length < 2) return;
 
-  if (timer) clearInterval(timer);
+  if (simulationTimer) clearInterval(simulationTimer);
 
-  timer = setInterval(() => {
-    if (routeCoordinates.length < 2) return;
+  let progress = 0;
 
-    const from = routeCoordinates[currentIndex];
+  simulationTimer = setInterval(() => {
+    progress += SPEED;
 
-    const to = routeCoordinates[(currentIndex + 1) % routeCoordinates.length];
+    if (progress > 1) progress = 0;
 
-    const latStep = (to[0] - from[0]) / stepsPerSegment;
-    const lngStep = (to[1] - from[1]) / stepsPerSegment;
+    const segmentCount = routeCoordinates.length - 1;
 
-    const lat = from[0] + latStep * step;
-    const lng = from[1] + lngStep * step;
+    const virtualPos = progress * segmentCount;
 
-    io.to("MH09-1234").emit("bus-location-update", {
+    const i = Math.floor(virtualPos);
+    const j = Math.min(i + 1, segmentCount);
+
+    const ratio = virtualPos - i;
+
+    const A = routeCoordinates[i];
+    const B = routeCoordinates[j];
+
+    if (!A || !B) return;
+
+    const lat = A[0] + (B[0] - A[0]) * ratio;
+    const lng = A[1] + (B[1] - A[1]) * ratio;
+
+    io.emit("bus-location-update", {
       busId: "MH09-1234",
       latitude: lat,
       longitude: lng,
     });
-
-    step++;
-
-    if (step >= stepsPerSegment) {
-      step = 0;
-      currentIndex++;
-
-      if (currentIndex >= routeCoordinates.length - 1) {
-        currentIndex = 0;
-      }
-    }
-
-    console.log("🚍 Bus moving on OSRM path...");
-  }, 180);
+  }, 60); // ⭐ Realistic smooth animation
 }
 
-/* ================= SOCKET CONNECTION ================= */
+/* Socket Events */
 
 io.on("connection", (socket) => {
   console.log("✅ Socket Connected:", socket.id);
 
   socket.on("track-bus", (busId) => {
     socket.join(busId);
-    console.log("👀 Joined room:", busId);
   });
 
   socket.on("disconnect", () => {
@@ -136,11 +125,11 @@ io.on("connection", (socket) => {
   });
 });
 
-/* ================= ERROR HANDLER ================= */
+/* Error Handler */
 
 app.use(errorHandler);
 
-/* ================= SERVER START ================= */
+/* Server Start */
 
 const PORT = process.env.PORT || 5000;
 

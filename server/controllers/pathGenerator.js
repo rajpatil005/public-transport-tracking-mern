@@ -1,4 +1,5 @@
 import Route from "../models/Route.js";
+
 export const generateOSRMPath = async (req, res) => {
   try {
     const route = await Route.findOne();
@@ -11,22 +12,25 @@ export const generateOSRMPath = async (req, res) => {
 
     const stops = route.stops;
 
-    if (stops.length < 2) {
+    if (!stops || stops.length < 2) {
       return res.status(400).json({
         message: "Need at least 2 stops",
       });
     }
 
-    let osrmUrl = "https://router.project-osrm.org/route/v1/driving/";
+    /* ⭐ Include ALL stops in OSRM path */
 
     const coords = stops.map((s) => `${s.lng},${s.lat}`).join(";");
 
-    osrmUrl += coords + "?overview=full&geometries=geojson";
+    let osrmUrl =
+      "https://router.project-osrm.org/route/v1/driving/" +
+      coords +
+      "?overview=full&geometries=geojson";
 
     const response = await fetch(osrmUrl);
     const data = await response.json();
 
-    if (!data.routes?.length) {
+    if (!data.routes || !data.routes.length) {
       return res.status(500).json({
         message: "OSRM path fetch failed",
       });
