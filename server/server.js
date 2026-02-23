@@ -19,7 +19,6 @@ connectDB();
 
 const app = express();
 
-/* Middleware */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,6 +30,7 @@ app.use(
 );
 
 /* Routes */
+
 app.use("/api/auth", authRoutes);
 app.use("/api/buses", busRoutes);
 app.use("/api/routes", routeRoutes);
@@ -43,86 +43,59 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
-    credentials: true,
   },
 });
 
-/* ================= TRACKING ENGINE ================= */
+/* Tracking Engine */
 
-let routeCoordinates = [];
-let simulationTimer = null;
+let pathPoints = [];
+let index = 0;
 
-/* ⭐ REALISTIC MOTION PHYSICS */
-const SPEED = 0.00012;
+const SPEED = 0.00005;
 
-/* Load Path */
-async function loadRoute() {
+async function loadPath() {
   try {
     const route = await Route.findOne();
 
     if (!route?.path?.length) return;
 
-    routeCoordinates = route.path.map((p) => [p.lat, p.lng]);
+    pathPoints = route.path.map((p) => ({
+      lat: Number(p.lat),
+      lng: Number(p.lng),
+    }));
 
-    console.log("✅ Tracking Path Loaded →", routeCoordinates.length);
+    console.log("✅ Tracking Path Loaded →", pathPoints.length);
 
-    if (!simulationTimer) startSimulation();
+    startEngine();
   } catch (err) {
-    console.log(err.message);
+    console.error(err.message);
   }
 }
 
-/* ⭐ Production Grade Smooth Engine */
+function startEngine() {
+  setInterval(() => {
+    if (pathPoints.length < 2) return;
 
-function startSimulation() {
-  if (routeCoordinates.length < 2) return;
+    const point = pathPoints[index];
 
-  if (simulationTimer) clearInterval(simulationTimer);
-
-  let progress = 0;
-
-  simulationTimer = setInterval(() => {
-    progress += SPEED;
-
-    if (progress > 1) progress = 0;
-
-    const segmentCount = routeCoordinates.length - 1;
-
-    const virtualPos = progress * segmentCount;
-
-    const i = Math.floor(virtualPos);
-    const j = Math.min(i + 1, segmentCount);
-
-    const ratio = virtualPos - i;
-
-    const A = routeCoordinates[i];
-    const B = routeCoordinates[j];
-
-    if (!A || !B) return;
-
-    const lat = A[0] + (B[0] - A[0]) * ratio;
-    const lng = A[1] + (B[1] - A[1]) * ratio;
-
-    io.emit("bus-location-update", {
+    io.to("MH09-1234").emit("bus-location-update", {
       busId: "MH09-1234",
-      latitude: lat,
-      longitude: lng,
+      latitude: point.lat,
+      longitude: point.lng,
     });
-  }, 60); // ⭐ Realistic smooth animation
+
+    index++;
+
+    if (index >= pathPoints.length) index = 0;
+  }, 220);
 }
 
-/* Socket Events */
+/* Socket Connection */
 
 io.on("connection", (socket) => {
   console.log("✅ Socket Connected:", socket.id);
 
-  socket.on("track-bus", (busId) => {
-    socket.join(busId);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("❌ Socket Disconnected:", socket.id);
-  });
+  socket.join("MH09-1234");
 });
 
 /* Error Handler */
@@ -137,6 +110,6 @@ server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
-/* Load Route */
+/* Load Path */
 
-loadRoute();
+loadPath();

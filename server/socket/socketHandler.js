@@ -1,55 +1,50 @@
 import Route from "../models/Route.js";
 
-export const initializeSocket = (io) => {
-  let routeCoordinates = [];
-  let currentIndex = 0;
+export const initializeTrackingEngine = (io) => {
+  let pathPoints = [];
+  let index = 0;
 
-  async function loadRoutePath() {
+  async function loadPath() {
     try {
       const route = await Route.findOne();
 
       if (!route?.path?.length) return;
 
-      routeCoordinates = route.path.map((p) => ({
+      pathPoints = route.path.map((p) => ({
         lat: Number(p.lat),
         lng: Number(p.lng),
       }));
 
-      console.log("✅ Tracking Path Loaded →", routeCoordinates.length);
+      console.log("✅ Tracking Path Loaded →", pathPoints.length);
 
-      startMovementEngine();
+      startEngine();
     } catch (err) {
       console.error(err.message);
     }
   }
 
-  function startMovementEngine() {
-    const busId = "MH09-1234";
-
+  function startEngine() {
     setInterval(() => {
-      if (!routeCoordinates.length) return;
+      if (pathPoints.length < 2) return;
 
-      const point = routeCoordinates[currentIndex];
+      const point = pathPoints[index];
 
-      if (!point) return;
-
-      io.emit("bus-location-update", {
-        busId,
+      io.to("MH09-1234").emit("bus-location-update", {
+        busId: "MH09-1234",
         latitude: point.lat,
         longitude: point.lng,
       });
 
-      currentIndex++;
+      index++;
 
-      if (currentIndex >= routeCoordinates.length) {
-        currentIndex = 0;
-      }
-    }, 150);
+      if (index >= pathPoints.length) index = 0;
+    }, 220);
   }
 
   io.on("connection", (socket) => {
+    socket.join("MH09-1234");
     console.log("✅ Socket Connected:", socket.id);
   });
 
-  loadRoutePath();
+  loadPath();
 };

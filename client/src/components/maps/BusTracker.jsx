@@ -4,6 +4,8 @@ import "leaflet/dist/leaflet.css";
 
 import { useSocket } from "../../context/SocketProvider";
 
+/* ================= ICONS ================= */
+
 const busIcon = L.icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448339.png",
   iconSize: [40, 40],
@@ -28,7 +30,9 @@ const BusTracker = ({ bus }) => {
   const polylineRef = useRef(null);
   const animationRef = useRef(null);
 
-  const { on, off, isConnected } = useSocket();
+  const { isConnected } = useSocket();
+
+  /* ================= MAP INIT ================= */
 
   useEffect(() => {
     if (!bus || mapRef.current) return;
@@ -44,6 +48,8 @@ const BusTracker = ({ bus }) => {
     mapRef.current = map;
   }, [bus]);
 
+  /* ================= ROUTE LOAD + TRACKING ================= */
+
   useEffect(() => {
     if (!bus?.route?.stops?.length) return;
 
@@ -53,14 +59,20 @@ const BusTracker = ({ bus }) => {
       const first = stops[0];
       const last = stops[stops.length - 1];
 
-      const url = `https://router.project-osrm.org/route/v1/driving/${first.lng},${first.lat};${last.lng},${last.lat}?overview=full&geometries=geojson`;
+      const url =
+        `https://router.project-osrm.org/route/v1/driving/` +
+        `${first.lng},${first.lat};${last.lng},${last.lat}` +
+        `?overview=full&geometries=geojson`;
 
       const res = await fetch(url);
       const data = await res.json();
 
       if (!data.routes?.length) return;
 
-      const path = data.routes[0].geometry.coordinates.map((c) => [c[1], c[0]]);
+      /* ⭐ Convert to proper LatLng objects (FIXES NaN BUG) */
+      const path = data.routes[0].geometry.coordinates.map((c) =>
+        L.latLng(c[1], c[0]),
+      );
 
       polylineRef.current.setLatLngs(path);
 
@@ -68,86 +80,77 @@ const BusTracker = ({ bus }) => {
         padding: [40, 40],
       });
 
+      /* Start & End markers */
       L.marker([first.lat, first.lng], { icon: startIcon }).addTo(
         mapRef.current,
       );
 
       L.marker([last.lat, last.lng], { icon: endIcon }).addTo(mapRef.current);
+
+      startTracking(path);
     };
 
     loadRoute();
   }, [bus]);
 
-  useEffect(() => {
-    if (!bus?.busNumber) return;
+  /* ================= TRACKING ENGINE ================= */
 
-    let pathCache = [];
+  const startTracking = (path) => {
+    if (!path || path.length < 2) return;
+
     let progress = 0;
+    const SPEED = 0.00005;
 
-    const SPEED = 0.00008;
-
-    const handler = (payload) => {
-      if (!payload || payload.busId !== bus.busNumber) return;
-
-      if (!polylineRef.current) return;
-
-      pathCache = polylineRef.current.getLatLngs();
-    };
-
-    on("bus-location-update", handler);
+    if (!markerRef.current) {
+      markerRef.current = L.marker(path[0], {
+        icon: busIcon,
+      }).addTo(mapRef.current);
+    }
 
     const animate = () => {
-      if (pathCache.length > 1 && markerRef.current && mapRef.current) {
-        progress += SPEED;
+      progress += SPEED;
+      if (progress > 1) progress = 0;
 
-        if (progress > 1) progress = 0;
+      const segmentCount = path.length - 1;
+      const virtualIndex = progress * segmentCount;
 
-        const segmentCount = pathCache.length - 1;
+      const i = Math.floor(virtualIndex);
+      const j = Math.min(i + 1, segmentCount);
+      const ratio = virtualIndex - i;
 
-        const virtualIndex = progress * segmentCount;
+      const A = path[i];
+      const B = path[j];
 
-        const i = Math.floor(virtualIndex);
-        const j = Math.min(i + 1, segmentCount);
+      if (A && B) {
+        const lat = A.lat + (B.lat - A.lat) * ratio;
+        const lng = A.lng + (B.lng - A.lng) * ratio;
 
-        const ratio = virtualIndex - i;
+        markerRef.current.setLatLng([lat, lng]);
 
-        const A = pathCache[i];
-        const B = pathCache[j];
-
-        if (A && B) {
-          const lat = A.lat + (B.lat - A.lat) * ratio;
-          const lng = A.lng + (B.lng - A.lng) * ratio;
-
-          markerRef.current.setLatLng([lat, lng]);
-          mapRef.current.panTo([lat, lng], {
-            animate: true,
-            duration: 0.15,
-          });
-        }
+        mapRef.current.panTo([lat, lng], {
+          animate: true,
+          duration: 0.15,
+        });
       }
 
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    if (!markerRef.current && polylineRef.current) {
-      const path = polylineRef.current.getLatLngs();
-      if (path.length) {
-        markerRef.current = L.marker(path[0], { icon: busIcon }).addTo(
-          mapRef.current,
-        );
-      }
-    }
-
     animationRef.current = requestAnimationFrame(animate);
+  };
 
+  /* ================= CLEANUP ================= */
+
+  useEffect(() => {
     return () => {
-      off("bus-location-update", handler);
       cancelAnimationFrame(animationRef.current);
     };
-  }, [bus?.busNumber, on, off]);
+  }, []);
+
+  /* ================= UI ================= */
 
   return (
-    <div style={{ height: "100%" }}>
+    <div style={{ height: "100%", position: "relative" }}>
       <div id="bus-map" style={{ height: "100%" }} />
 
       <div
@@ -158,6 +161,7 @@ const BusTracker = ({ bus }) => {
           background: "white",
           padding: "6px 14px",
           borderRadius: "8px",
+          fontWeight: "600",
         }}
       >
         {isConnected ? "🟢 Live Tracking" : "🔴 Offline"}
