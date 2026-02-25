@@ -34,7 +34,9 @@ const BusTracker = ({ bus }) => {
   useEffect(() => {
     if (!bus || mapRef.current) return;
 
-    const map = L.map("bus-map").setView(DEFAULT_CENTER, 14);
+    const map = L.map("bus-map", {
+      preferCanvas: true,
+    }).setView(DEFAULT_CENTER, 14);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
       map,
@@ -86,10 +88,6 @@ const BusTracker = ({ bus }) => {
       }
 
       markerRef.current.bindPopup(`🚍 Speed: ${speed || 0} km/h`);
-
-      mapRef.current.setView([latitude, longitude], mapRef.current.getZoom(), {
-        animate: true,
-      });
     });
 
     return () => {

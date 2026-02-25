@@ -18,6 +18,8 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     const socket = io("http://127.0.0.1:5000", {
       transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 10,
     });
 
     socketRef.current = socket;
@@ -28,16 +30,21 @@ export const SocketProvider = ({ children }) => {
     });
 
     socket.on("disconnect", () => {
+      console.log("❌ Socket Disconnected");
       setIsConnected(false);
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.disconnect();
+    };
   }, []);
 
   return (
     <SocketContext.Provider
       value={{
-        socket: socketRef.current, // 🔥 IMPORTANT FIX
+        socket: socketRef.current,
         isConnected,
       }}
     >

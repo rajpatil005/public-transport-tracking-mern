@@ -1,34 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Navigation, MapPin, Clock, Send, ArrowLeft } from 'lucide-react';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
-
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Navigation, MapPin, Clock, Send, ArrowLeft } from "lucide-react";
+import { useSocket } from "../../context/SocketProvider";
+import Card from "../ui/Card";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
 
 const UpdateLocation = () => {
   const navigate = useNavigate();
   const { socket, isConnected } = useSocket();
-  
+
   const [location, setLocation] = useState({
-    latitude: '',
-    longitude: '',
-    speed: '0',
-    nextStop: ''
+    latitude: "",
+    longitude: "",
+    speed: "0",
+    nextStop: "",
   });
-  
+
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState("");
 
   const stops = [
-    'Central Bus Stand',
-    'Shivaji Chowk',
-    'Mahadwar Road',
-    'Mahalaxmi Temple',
-    'Rankala Lake',
-    'Shahupuri',
-    'Ruikar Colony',
-    'Jawahar Nagar'
+    "Central Bus Stand",
+    "Shivaji Chowk",
+    "Mahadwar Road",
+    "Mahalaxmi Temple",
+    "Rankala Lake",
+    "Shahupuri",
+    "Ruikar Colony",
+    "Jawahar Nagar",
   ];
 
   const getCurrentLocation = () => {
@@ -40,48 +40,50 @@ const UpdateLocation = () => {
             ...location,
             latitude: position.coords.latitude.toFixed(6),
             longitude: position.coords.longitude.toFixed(6),
-            speed: position.coords.speed ? position.coords.speed.toFixed(1) : '0'
+            speed: position.coords.speed
+              ? position.coords.speed.toFixed(1)
+              : "0",
           });
           setLoading(false);
         },
         (error) => {
-          alert('Error getting location: ' + error.message);
+          alert("Error getting location: " + error.message);
           setLoading(false);
-        }
+        },
       );
     } else {
-      alert('Geolocation is not supported by this browser');
+      alert("Geolocation is not supported by this browser");
       setLoading(false);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!location.latitude || !location.longitude) {
-      alert('Please get your location first');
+      alert("Please get your location first");
       return;
     }
 
     if (!location.nextStop) {
-      alert('Please select next stop');
+      alert("Please select next stop");
       return;
     }
 
     // Send location update via socket
     if (socket && isConnected) {
-      socket.emit('driver-location-update', {
-        busId: 'MH09-1234', // This should come from user context
+      socket.emit("driver-location-update", {
+        busId: "MH09-1234", // This should come from user context
         latitude: parseFloat(location.latitude),
         longitude: parseFloat(location.longitude),
         speed: parseFloat(location.speed),
-        nextStop: location.nextStop
+        nextStop: location.nextStop,
       });
 
-      setSuccess('Location updated successfully!');
-      setTimeout(() => setSuccess(''), 3000);
+      setSuccess("Location updated successfully!");
+      setTimeout(() => setSuccess(""), 3000);
     } else {
-      alert('Not connected to server');
+      alert("Not connected to server");
     }
   };
 
@@ -101,7 +103,9 @@ const UpdateLocation = () => {
             <Navigation className="h-6 w-6 mr-2 text-blue-600" />
             Update Live Location
           </h2>
-          <p className="text-gray-600 mt-2">Share your current location with passengers</p>
+          <p className="text-gray-600 mt-2">
+            Share your current location with passengers
+          </p>
         </Card.Header>
 
         <Card.Body className="p-6">
@@ -112,11 +116,7 @@ const UpdateLocation = () => {
           )}
 
           <div className="mb-6">
-            <Button 
-              onClick={getCurrentLocation} 
-              loading={loading}
-              fullWidth
-            >
+            <Button onClick={getCurrentLocation} loading={loading} fullWidth>
               <MapPin className="h-4 w-4 mr-2" />
               Get Current Location
             </Button>
@@ -152,11 +152,7 @@ const UpdateLocation = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Speed (km/h)
                 </label>
-                <Input
-                  type="text"
-                  value={location.speed}
-                  readOnly
-                />
+                <Input type="text" value={location.speed} readOnly />
               </div>
 
               <div>
@@ -165,13 +161,17 @@ const UpdateLocation = () => {
                 </label>
                 <select
                   value={location.nextStop}
-                  onChange={(e) => setLocation({...location, nextStop: e.target.value})}
+                  onChange={(e) =>
+                    setLocation({ ...location, nextStop: e.target.value })
+                  }
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select next stop</option>
                   {stops.map((stop) => (
-                    <option key={stop} value={stop}>{stop}</option>
+                    <option key={stop} value={stop}>
+                      {stop}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -185,8 +185,12 @@ const UpdateLocation = () => {
 
           <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
             <div className="flex items-center">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} mr-2`} />
-              {isConnected ? 'Connected to server' : 'Disconnected'}
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isConnected ? "bg-green-500" : "bg-red-500"
+                } mr-2`}
+              />
+              {isConnected ? "Connected to server" : "Disconnected"}
             </div>
             <Clock className="h-4 w-4" />
           </div>
