@@ -19,13 +19,15 @@ const endIcon = L.icon({
   iconSize: [35, 35],
 });
 
-const DEFAULT_CENTER = [16.705, 74.2433];
+const TRACKING_ZOOM = 19;
 
 const BusTracker = ({ bus }) => {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
-  const [mapReady, setMapReady] = useState(false);
+
+  const followRef = useRef(true);
+  const [followState, setFollowState] = useState(true);
 
   const { socket, isConnected } = useSocket();
 
@@ -35,65 +37,143 @@ const BusTracker = ({ bus }) => {
     if (!bus || mapRef.current) return;
 
     const map = L.map("bus-map", {
-      preferCanvas: true,
-    }).setView(DEFAULT_CENTER, 14);
+      maxZoom: 22,
+      minZoom: 5,
+      zoomControl: true,
+    }).setView([16.705, 74.2433], TRACKING_ZOOM);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
-      map,
-    );
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 22,
+    }).addTo(map);
 
     polylineRef.current = L.polyline([], { weight: 6 }).addTo(map);
 
-    mapRef.current = map;
-    setMapReady(true);
-  }, [bus]);
-
-  /* ================= DRAW ROUTE ================= */
-
-  useEffect(() => {
-    if (!bus?.route?.stops?.length || !mapReady) return;
-
-    const stops = bus.route.stops;
-    const first = stops[0];
-    const last = stops[stops.length - 1];
-
-    if (bus.route.path?.length) {
-      const path = bus.route.path.map((p) => [p.lat, p.lng]);
-      polylineRef.current.setLatLngs(path);
-      mapRef.current.fitBounds(path, { padding: [40, 40] });
-    }
-
-    L.marker([first.lat, first.lng], { icon: startIcon }).addTo(mapRef.current);
-    L.marker([last.lat, last.lng], { icon: endIcon }).addTo(mapRef.current);
-  }, [bus, mapReady]);
-
-  /* ================= SOCKET LISTENER ================= */
-
-  useEffect(() => {
-    if (!socket || !mapReady) return;
-
-    console.log("🎯 Listening for bus updates...");
-
-    socket.on("bus-location-update", (data) => {
-      const { latitude, longitude, speed } = data;
-
-      if (!latitude || !longitude) return;
-
-      if (!markerRef.current) {
-        markerRef.current = L.marker([latitude, longitude], {
-          icon: busIcon,
-        }).addTo(mapRef.current);
-      } else {
-        markerRef.current.setLatLng([latitude, longitude]);
-      }
-
-      markerRef.current.bindPopup(`🚍 Speed: ${speed || 0} km/h`);
+    map.on("dragstart zoomstart", () => {
+      followRef.current = false;
+      setFollowState(false);
     });
 
-    return () => {
-      socket.off("bus-location-update");
+    mapRef.current = map;
+  }, [bus]);
+
+  /* ================= PATH DRAWING ================= */
+
+  useEffect(() => {
+    if (!bus?.route?.path?.length || !mapRef.current) return;
+
+    const path = bus.route.path.map((p) => [p.lat, p.lng]);
+
+    polylineRef.current.setLatLngs(path);
+
+    mapRef.current.fitBounds(path, {
+      padding: [40, 40],
+      animate: true,
+    });
+
+    const stops = bus.route.stops || [];
+
+    if (stops.length) {
+      L.marker([stops[0].lat, stops[0].lng], {
+        icon: startIcon,
+      }).addTo(mapRef.current);
+
+      const last = stops[stops.length - 1];
+
+      L.marker([last.lat, last.lng], {
+        icon: endIcon,
+      }).addTo(mapRef.current);
+    }
+  }, [bus]);
+
+  /* ================= SOCKET TRACKING ================= */
+
+  useEffect(() => {
+    if (!socket) return;
+
+    let animationFrame;
+    let startTime;
+    let startLatLng = null;
+    let targetLatLng = null;
+    const duration = 800;
+
+    const animateMarker = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+
+      const lat =
+        startLatLng.lat + (targetLatLng.lat - startLatLng.lat) * progress;
+
+      const lng =
+        startLatLng.lng + (targetLatLng.lng - startLatLng.lng) * progress;
+
+      const current = L.latLng(lat, lng);
+
+      markerRef.current.setLatLng(current);
+
+      if (followRef.current) {
+        mapRef.current.panTo(current, { animate: false });
+      }
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animateMarker);
+      }
     };
-  }, [socket, mapReady]);
+
+    const handler = (data) => {
+      if (!mapRef.current) return;
+
+      const { latitude, longitude, speed } = data;
+      if (!latitude || !longitude) return;
+
+      const newLatLng = L.latLng(latitude, longitude);
+
+      if (!markerRef.current) {
+        markerRef.current = L.marker(newLatLng, {
+          icon: busIcon,
+        }).addTo(mapRef.current);
+        return;
+      }
+
+      cancelAnimationFrame(animationFrame);
+
+      startLatLng = markerRef.current.getLatLng();
+      targetLatLng = newLatLng;
+      startTime = null;
+
+      markerRef.current.bindPopup(`🚍 Speed: ${speed || 0} km/h`);
+
+      animationFrame = requestAnimationFrame(animateMarker);
+    };
+
+    socket.on("bus-location-update", handler);
+
+    return () => {
+      socket.off("bus-location-update", handler);
+      cancelAnimationFrame(animationFrame);
+    };
+  }, [socket]);
+
+  /* ================= RECENTER ================= */
+
+  const handleRecenter = () => {
+    if (!mapRef.current || !markerRef.current) return;
+
+    const pos = markerRef.current.getLatLng();
+    if (!pos) return;
+
+    followRef.current = true;
+    setFollowState(true);
+
+    // Smooth zoom animation
+    mapRef.current.flyTo(pos, TRACKING_ZOOM, {
+      animate: true,
+      duration: 1,
+    });
+
+    mapRef.current.once("moveend", () => {
+      followRef.current = true;
+    });
+  };
 
   return (
     <div style={{ height: "100%", position: "relative" }}>
@@ -108,10 +188,31 @@ const BusTracker = ({ bus }) => {
           padding: "6px 14px",
           borderRadius: "8px",
           fontWeight: "600",
+          zIndex: 1000,
         }}
       >
         {isConnected ? "🟢 Live Tracking" : "🔴 Offline"}
       </div>
+
+      {!followState && (
+        <button
+          onClick={handleRecenter}
+          style={{
+            position: "absolute",
+            bottom: 20,
+            right: 20,
+            padding: "12px 18px",
+            borderRadius: "40px",
+            background: "#1976d2",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+            zIndex: 1000,
+          }}
+        >
+          🎯 Recenter
+        </button>
+      )}
     </div>
   );
 };
