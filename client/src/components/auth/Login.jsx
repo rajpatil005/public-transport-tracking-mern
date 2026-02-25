@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Bus } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +11,10 @@ const Login = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // ✅ Refs for keyboard navigation
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
 
   const getEmailError = (email) => {
     if (!email) return "Email is required.";
@@ -113,6 +117,7 @@ const Login = () => {
               )}
 
               <form onSubmit={handleSubmit} noValidate className="space-y-6">
+                {/* EMAIL */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Email
@@ -122,8 +127,15 @@ const Login = () => {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
 
                     <input
+                      ref={emailRef}
                       type="text"
                       value={formData.email}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown" || e.key === "Enter") {
+                          e.preventDefault();
+                          passwordRef.current?.focus();
+                        }
+                      }}
                       onChange={(e) => {
                         const value = e.target.value;
                         setFormData({ ...formData, email: value });
@@ -146,6 +158,7 @@ const Login = () => {
                   )}
                 </div>
 
+                {/* PASSWORD */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Password
@@ -155,8 +168,15 @@ const Login = () => {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" />
 
                     <input
+                      ref={passwordRef}
                       type="password"
                       value={formData.password}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          emailRef.current?.focus();
+                        }
+                      }}
                       onChange={(e) => {
                         const value = e.target.value;
                         setFormData({ ...formData, password: value });

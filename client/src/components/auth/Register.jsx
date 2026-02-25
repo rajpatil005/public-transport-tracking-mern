@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Bus } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -17,6 +17,12 @@ const Register = () => {
 
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // ✅ Refs for keyboard navigation
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const confirmPasswordRef = useRef(null);
 
   /* ---------------- EMAIL VALIDATION ---------------- */
 
@@ -127,8 +133,15 @@ const Register = () => {
                   </label>
 
                   <input
+                    ref={nameRef}
                     type="text"
                     value={formData.name}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "Enter") {
+                        e.preventDefault();
+                        emailRef.current?.focus();
+                      }
+                    }}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
@@ -150,8 +163,19 @@ const Register = () => {
                   </label>
 
                   <input
+                    ref={emailRef}
                     type="text"
                     value={formData.email}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "Enter") {
+                        e.preventDefault();
+                        passwordRef.current?.focus();
+                      }
+                      if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        nameRef.current?.focus();
+                      }
+                    }}
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
@@ -173,8 +197,19 @@ const Register = () => {
                   </label>
 
                   <input
+                    ref={passwordRef}
                     type="password"
                     value={formData.password}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown" || e.key === "Enter") {
+                        e.preventDefault();
+                        confirmPasswordRef.current?.focus();
+                      }
+                      if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        emailRef.current?.focus();
+                      }
+                    }}
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
@@ -196,8 +231,15 @@ const Register = () => {
                   </label>
 
                   <input
+                    ref={confirmPasswordRef}
                     type="password"
                     value={formData.confirmPassword}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        passwordRef.current?.focus();
+                      }
+                    }}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
