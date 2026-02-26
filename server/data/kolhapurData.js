@@ -1,4 +1,4 @@
-// Kolhapur City Bus Routes Data
+// ================= KOLHAPUR CITY ROUTES =================
 
 export const kolhapurRoutes = [
   {
@@ -29,12 +29,14 @@ export const kolhapurRoutes = [
     destination: "DYP City Mall",
     stops: [
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
+      { name: "Shivaji Chowk", latitude: 16.6983, longitude: 74.2389 },
       { name: "New Palace", latitude: 16.7031, longitude: 74.2586 },
       { name: "Shivaji University", latitude: 16.7222, longitude: 74.2481 },
       { name: "DYP City Mall", latitude: 16.7125, longitude: 74.2253 },
     ],
     path: [
       { lat: 16.7017, lng: 74.2431 },
+      { lat: 16.6983, lng: 74.2389 },
       { lat: 16.7031, lng: 74.2586 },
       { lat: 16.7222, lng: 74.2481 },
       { lat: 16.7125, lng: 74.2253 },
@@ -48,11 +50,15 @@ export const kolhapurRoutes = [
     destination: "Khasbag Maidan",
     stops: [
       { name: "Rankala Lake", latitude: 16.6878, longitude: 74.2167 },
+      { name: "Mahadwar Road", latitude: 16.6942, longitude: 74.2347 },
+      { name: "Shivaji Chowk", latitude: 16.6983, longitude: 74.2389 },
       { name: "CPR Hospital", latitude: 16.7083, longitude: 74.2356 },
       { name: "Khasbag Maidan", latitude: 16.6947, longitude: 74.2408 },
     ],
     path: [
       { lat: 16.6878, lng: 74.2167 },
+      { lat: 16.6942, lng: 74.2347 },
+      { lat: 16.6983, lng: 74.2389 },
       { lat: 16.7083, lng: 74.2356 },
       { lat: 16.6947, lng: 74.2408 },
     ],
@@ -66,11 +72,15 @@ export const kolhapurRoutes = [
     stops: [
       { name: "Shivaji University", latitude: 16.7222, longitude: 74.2481 },
       { name: "New Palace", latitude: 16.7031, longitude: 74.2586 },
+      { name: "Shivaji Chowk", latitude: 16.6983, longitude: 74.2389 },
+      { name: "Mahadwar Road", latitude: 16.6942, longitude: 74.2347 },
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
     ],
     path: [
       { lat: 16.7222, lng: 74.2481 },
       { lat: 16.7031, lng: 74.2586 },
+      { lat: 16.6983, lng: 74.2389 },
+      { lat: 16.6942, lng: 74.2347 },
       { lat: 16.7017, lng: 74.2431 },
     ],
   },
@@ -82,11 +92,15 @@ export const kolhapurRoutes = [
     destination: "Rankala Lake",
     stops: [
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
+      { name: "Shivaji Chowk", latitude: 16.6983, longitude: 74.2389 },
+      { name: "New Palace", latitude: 16.7031, longitude: 74.2586 },
       { name: "DYP City Mall", latitude: 16.7125, longitude: 74.2253 },
       { name: "Rankala Lake", latitude: 16.6878, longitude: 74.2167 },
     ],
     path: [
       { lat: 16.7017, lng: 74.2431 },
+      { lat: 16.6983, lng: 74.2389 },
+      { lat: 16.7031, lng: 74.2586 },
       { lat: 16.7125, lng: 74.2253 },
       { lat: 16.6878, lng: 74.2167 },
     ],
@@ -98,7 +112,6 @@ export const kolhapurRoutes = [
 export const kolhapurBuses = [
   {
     busNumber: "MH09-1234",
-    registrationNumber: "MH09AB1234",
     capacity: 52,
     routeNumber: "101",
     driverName: "Rajendra Patil",
@@ -106,7 +119,6 @@ export const kolhapurBuses = [
   },
   {
     busNumber: "MH09-5678",
-    registrationNumber: "MH09CD5678",
     capacity: 45,
     routeNumber: "102",
     driverName: "Sanjay Deshmukh",
@@ -114,7 +126,6 @@ export const kolhapurBuses = [
   },
   {
     busNumber: "MH09-9101",
-    registrationNumber: "MH09EF9101",
     capacity: 60,
     routeNumber: "103",
     driverName: "Prakash Jadhav",
@@ -122,7 +133,6 @@ export const kolhapurBuses = [
   },
   {
     busNumber: "MH09-1121",
-    registrationNumber: "MH09GH1121",
     capacity: 52,
     routeNumber: "104",
     driverName: "Vijay More",
@@ -130,7 +140,6 @@ export const kolhapurBuses = [
   },
   {
     busNumber: "MH09-3141",
-    registrationNumber: "MH09IJ3141",
     capacity: 45,
     routeNumber: "105",
     driverName: "Dattatray Kambale",

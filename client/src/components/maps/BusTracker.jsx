@@ -19,6 +19,12 @@ const endIcon = L.icon({
   iconSize: [35, 35],
 });
 
+const stopIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/128/2698/2698545.png",
+  iconSize: [28, 28],
+  iconAnchor: [14, 28],
+});
+
 const TRACKING_ZOOM = 19;
 
 const BusTracker = ({ bus }) => {
@@ -29,6 +35,7 @@ const BusTracker = ({ bus }) => {
 
   const startMarkerRef = useRef(null);
   const endMarkerRef = useRef(null);
+  const stopMarkersRef = useRef([]);
 
   const followRef = useRef(true);
   const [followState, setFollowState] = useState(true);
@@ -82,7 +89,7 @@ const BusTracker = ({ bus }) => {
       }
 
       const firstPoint = bus.route.path?.[0];
-      if (firstPoint) {
+      if (firstPoint?.lat && firstPoint?.lng) {
         const latLng = L.latLng(firstPoint.lat, firstPoint.lng);
 
         markerRef.current = L.marker(latLng, {
@@ -96,13 +103,17 @@ const BusTracker = ({ bus }) => {
     }
   }, [bus?.route?.routeNumber]);
 
-  /* ================= PATH DRAWING ================= */
+  /* ================= PATH + STOPS DRAWING ================= */
 
   useEffect(() => {
     if (!bus?.route?.path || !mapRef.current) return;
 
     const map = mapRef.current;
-    const path = [...bus.route.path].map((p) => [p.lat, p.lng]);
+
+    const path = bus.route.path
+      .filter((p) => p?.lat && p?.lng)
+      .map((p) => [p.lat, p.lng]);
+
     if (!path.length) return;
 
     polylineRef.current?.setLatLngs(path);
@@ -112,28 +123,52 @@ const BusTracker = ({ bus }) => {
       animate: true,
     });
 
-    const stops = bus.route.stops || [];
+    stopMarkersRef.current.forEach((m) => map.removeLayer(m));
+    stopMarkersRef.current = [];
 
     if (startMarkerRef.current) map.removeLayer(startMarkerRef.current);
     if (endMarkerRef.current) map.removeLayer(endMarkerRef.current);
 
-    if (stops.length > 0) {
-      startMarkerRef.current = L.marker([stops[0].lat, stops[0].lng], {
-        icon: startIcon,
-      }).addTo(map);
-    }
+    const stops = bus.route.stops || [];
+    if (!stops.length) return;
 
-    if (stops.length > 1) {
-      const last = stops[stops.length - 1];
-      endMarkerRef.current = L.marker([last.lat, last.lng], {
-        icon: endIcon,
-      }).addTo(map);
-    }
+    stops.forEach((stop, index) => {
+      const lat = stop.latitude ?? stop.lat;
+      const lng = stop.longitude ?? stop.lng;
+
+      if (lat == null || lng == null) return; // prevent crash
+
+      if (index === 0) {
+        startMarkerRef.current = L.marker([lat, lng], {
+          icon: startIcon,
+        })
+          .addTo(map)
+          .bindPopup(`<b>Start:</b> ${stop.name}`);
+        return;
+      }
+
+      if (index === stops.length - 1) {
+        endMarkerRef.current = L.marker([lat, lng], {
+          icon: endIcon,
+        })
+          .addTo(map)
+          .bindPopup(`<b>End:</b> ${stop.name}`);
+        return;
+      }
+
+      const stopMarker = L.marker([lat, lng], {
+        icon: stopIcon,
+      })
+        .addTo(map)
+        .bindPopup(stop.name);
+
+      stopMarkersRef.current.push(stopMarker);
+    });
 
     setTimeout(() => map.invalidateSize(), 200);
-  }, [bus?.route?.path?.length, JSON.stringify(bus?.route?.path)]);
+  }, [bus?.route]);
 
-  /* ================= SOCKET TRACKING (SMART ANIMATION) ================= */
+  /* ================= SOCKET TRACKING (UNCHANGED SMOOTH) ================= */
 
   useEffect(() => {
     if (!socket || !bus?.route) return;
@@ -143,8 +178,7 @@ const BusTracker = ({ bus }) => {
     let startLatLng = null;
     let targetLatLng = null;
 
-    const duration = 600; // smoother & faster
-
+    const duration = 600;
     const hasInitializedRef = { current: false };
 
     const animateMarker = (timestamp) => {
@@ -188,7 +222,6 @@ const BusTracker = ({ bus }) => {
 
       const newLatLng = L.latLng(latitude, longitude);
 
-      // FIRST TIME → TELEPORT (no animation)
       if (!markerRef.current) {
         markerRef.current = L.marker(newLatLng, {
           icon: busIcon,
@@ -198,14 +231,12 @@ const BusTracker = ({ bus }) => {
         return;
       }
 
-      // If marker just created after route switch → teleport once
       if (!hasInitializedRef.current) {
         markerRef.current.setLatLng(newLatLng);
         hasInitializedRef.current = true;
         return;
       }
 
-      // Smooth animation for continuous updates
       cancelAnimationFrame(animationFrame);
 
       startLatLng = markerRef.current.getLatLng();
@@ -225,7 +256,7 @@ const BusTracker = ({ bus }) => {
     };
   }, [socket, bus]);
 
-  /* ================= CONTROLS ================= */
+  /* ================= CONTROLS (UNCHANGED — RECENTER SAFE) ================= */
 
   const handleRecenter = () => {
     if (!mapRef.current || !markerRef.current) return;
