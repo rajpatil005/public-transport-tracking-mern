@@ -22,12 +22,19 @@ const endIcon = L.icon({
 const TRACKING_ZOOM = 19;
 
 const BusTracker = ({ bus }) => {
+  const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
 
+  const startMarkerRef = useRef(null);
+  const endMarkerRef = useRef(null);
+
   const followRef = useRef(true);
   const [followState, setFollowState] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const currentRouteRef = useRef(null);
 
   const { socket, isConnected } = useSocket();
 
@@ -56,48 +63,93 @@ const BusTracker = ({ bus }) => {
     mapRef.current = map;
   }, [bus]);
 
+  /* ================= ROUTE SWITCH TELEPORT ================= */
+
+  useEffect(() => {
+    if (!bus?.route || !mapRef.current) return;
+
+    const newRoute = bus.route.routeNumber;
+
+    if (currentRouteRef.current !== newRoute) {
+      currentRouteRef.current = newRoute;
+
+      followRef.current = true;
+      setFollowState(true);
+
+      if (markerRef.current) {
+        mapRef.current.removeLayer(markerRef.current);
+        markerRef.current = null;
+      }
+
+      const firstPoint = bus.route.path?.[0];
+      if (firstPoint) {
+        const latLng = L.latLng(firstPoint.lat, firstPoint.lng);
+
+        markerRef.current = L.marker(latLng, {
+          icon: busIcon,
+        }).addTo(mapRef.current);
+
+        mapRef.current.setView(latLng, TRACKING_ZOOM, {
+          animate: false,
+        });
+      }
+    }
+  }, [bus?.route?.routeNumber]);
+
   /* ================= PATH DRAWING ================= */
 
   useEffect(() => {
-    if (!bus?.route?.path?.length || !mapRef.current) return;
+    if (!bus?.route?.path || !mapRef.current) return;
 
-    const path = bus.route.path.map((p) => [p.lat, p.lng]);
+    const map = mapRef.current;
+    const path = [...bus.route.path].map((p) => [p.lat, p.lng]);
+    if (!path.length) return;
 
-    polylineRef.current.setLatLngs(path);
+    polylineRef.current?.setLatLngs(path);
 
-    mapRef.current.fitBounds(path, {
+    map.fitBounds(path, {
       padding: [40, 40],
       animate: true,
     });
 
     const stops = bus.route.stops || [];
 
-    if (stops.length) {
-      L.marker([stops[0].lat, stops[0].lng], {
+    if (startMarkerRef.current) map.removeLayer(startMarkerRef.current);
+    if (endMarkerRef.current) map.removeLayer(endMarkerRef.current);
+
+    if (stops.length > 0) {
+      startMarkerRef.current = L.marker([stops[0].lat, stops[0].lng], {
         icon: startIcon,
-      }).addTo(mapRef.current);
-
-      const last = stops[stops.length - 1];
-
-      L.marker([last.lat, last.lng], {
-        icon: endIcon,
-      }).addTo(mapRef.current);
+      }).addTo(map);
     }
-  }, [bus]);
 
-  /* ================= SOCKET TRACKING ================= */
+    if (stops.length > 1) {
+      const last = stops[stops.length - 1];
+      endMarkerRef.current = L.marker([last.lat, last.lng], {
+        icon: endIcon,
+      }).addTo(map);
+    }
+
+    setTimeout(() => map.invalidateSize(), 200);
+  }, [bus?.route?.path?.length, JSON.stringify(bus?.route?.path)]);
+
+  /* ================= SOCKET TRACKING (SMART ANIMATION) ================= */
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !bus?.route) return;
 
     let animationFrame;
     let startTime;
     let startLatLng = null;
     let targetLatLng = null;
-    const duration = 800;
+
+    const duration = 600; // smoother & faster
+
+    const hasInitializedRef = { current: false };
 
     const animateMarker = (timestamp) => {
       if (!startTime) startTime = timestamp;
+
       const progress = Math.min((timestamp - startTime) / duration, 1);
 
       const lat =
@@ -108,9 +160,9 @@ const BusTracker = ({ bus }) => {
 
       const current = L.latLng(lat, lng);
 
-      markerRef.current.setLatLng(current);
+      markerRef.current?.setLatLng(current);
 
-      if (followRef.current) {
+      if (followRef.current && mapRef.current) {
         mapRef.current.panTo(current, { animate: false });
       }
 
@@ -120,20 +172,40 @@ const BusTracker = ({ bus }) => {
     };
 
     const handler = (data) => {
-      if (!mapRef.current) return;
+      if (!mapRef.current || !bus?.route) return;
 
-      const { latitude, longitude, speed } = data;
+      const { latitude, longitude, speed, routeNumber } = data;
+
+      if (
+        bus.route.routeNumber &&
+        routeNumber &&
+        routeNumber !== bus.route.routeNumber
+      ) {
+        return;
+      }
+
       if (!latitude || !longitude) return;
 
       const newLatLng = L.latLng(latitude, longitude);
 
+      // FIRST TIME → TELEPORT (no animation)
       if (!markerRef.current) {
         markerRef.current = L.marker(newLatLng, {
           icon: busIcon,
         }).addTo(mapRef.current);
+
+        hasInitializedRef.current = true;
         return;
       }
 
+      // If marker just created after route switch → teleport once
+      if (!hasInitializedRef.current) {
+        markerRef.current.setLatLng(newLatLng);
+        hasInitializedRef.current = true;
+        return;
+      }
+
+      // Smooth animation for continuous updates
       cancelAnimationFrame(animationFrame);
 
       startLatLng = markerRef.current.getLatLng();
@@ -151,20 +223,18 @@ const BusTracker = ({ bus }) => {
       socket.off("bus-location-update", handler);
       cancelAnimationFrame(animationFrame);
     };
-  }, [socket]);
+  }, [socket, bus]);
 
-  /* ================= RECENTER ================= */
+  /* ================= CONTROLS ================= */
 
   const handleRecenter = () => {
     if (!mapRef.current || !markerRef.current) return;
 
-    const pos = markerRef.current.getLatLng();
-    if (!pos) return;
-
     followRef.current = true;
     setFollowState(true);
 
-    // Smooth zoom animation
+    const pos = markerRef.current.getLatLng();
+
     mapRef.current.flyTo(pos, TRACKING_ZOOM, {
       animate: true,
       duration: 1,
@@ -175,8 +245,37 @@ const BusTracker = ({ bus }) => {
     });
   };
 
+  const handleFullRoute = () => {
+    if (!mapRef.current || !polylineRef.current) return;
+
+    followRef.current = false;
+    setFollowState(false);
+
+    const bounds = polylineRef.current.getBounds();
+    mapRef.current.fitBounds(bounds, {
+      padding: [40, 40],
+      animate: true,
+    });
+  };
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+
+    setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 300);
+  };
+
   return (
-    <div style={{ height: "100%", position: "relative" }}>
+    <div ref={containerRef} style={{ height: "100%", position: "relative" }}>
       <div id="bus-map" style={{ height: "100%" }} />
 
       <div
@@ -193,6 +292,42 @@ const BusTracker = ({ bus }) => {
       >
         {isConnected ? "🟢 Live Tracking" : "🔴 Offline"}
       </div>
+
+      <button
+        onClick={toggleFullscreen}
+        style={{
+          position: "absolute",
+          top: 55,
+          right: 10,
+          padding: "6px 12px",
+          borderRadius: "6px",
+          border: "none",
+          background: "#1976d2",
+          color: "white",
+          cursor: "pointer",
+          zIndex: 1000,
+        }}
+      >
+        {isFullscreen ? "⤢ Exit Fullscreen" : "⤢ Fullscreen"}
+      </button>
+
+      <button
+        onClick={handleFullRoute}
+        style={{
+          position: "absolute",
+          bottom: 80,
+          right: 20,
+          padding: "12px 18px",
+          borderRadius: "40px",
+          background: "#555",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+          zIndex: 1000,
+        }}
+      >
+        🗺️ Full Route
+      </button>
 
       {!followState && (
         <button

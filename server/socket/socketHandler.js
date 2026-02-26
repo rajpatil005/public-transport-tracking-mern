@@ -1,71 +1,62 @@
-// import Route from "../models/Route.js";
+io.on("connection", (socket) => {
+  console.log("✅ Socket Connected:", socket.id);
 
-// export const initializeSocket = (io) => {
-//   let routeCoordinates = [];
-//   let currentIndex = 0;
+  socket.on("track-bus", (busNumber) => {
+    socket.join(busNumber);
+  });
 
-//   /* Load Route Path */
-//   async function loadRoutePath() {
-//     try {
-//       const route = await Route.findOne();
+  /*
+  ⭐ Driver Location Update
+  */
 
-//       if (!route?.path?.length) {
-//         console.log("❌ No route path found");
-//         return;
-//       }
+  socket.on("driver-location-update", async (data) => {
+    try {
+      const { busId, latitude, longitude, speed, routePath } = data;
 
-//       routeCoordinates = route.path.map((p) => ({
-//         lat: Number(p.lat),
-//         lng: Number(p.lng),
-//       }));
+      if (!busId || !routePath?.length) return;
 
-//       console.log("✅ Socket Path Loaded →", routeCoordinates.length, "nodes");
-//     } catch (err) {
-//       console.error("Route Load Error:", err.message);
-//     }
-//   }
+      /*
+      ===============================
+      PATH SNAPPING ⭐⭐⭐
+      ===============================
+      */
 
-//   loadRoutePath();
+      let nearestPoint = null;
+      let minDistance = Infinity;
 
-//   /* Socket Connection */
+      for (const pathPoint of routePath) {
+        const dist = Math.hypot(
+          latitude - pathPoint.lat,
+          longitude - pathPoint.lng,
+        );
 
-//   io.on("connection", (socket) => {
-//     console.log("✅ Socket Connected:", socket.id);
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestPoint = pathPoint;
+        }
+      }
 
-//     socket.on("track-bus", (busId) => {
-//       socket.join(busId);
-//       console.log("👀 Tracking Room Joined →", busId);
-//     });
+      /*
+      If path snapping fails → fallback raw GPS
+      */
 
-//     /* ⭐ Movement Engine */
+      const finalPosition = nearestPoint || {
+        lat: latitude,
+        lng: longitude,
+      };
 
-//     let movementInterval = setInterval(() => {
-//       if (!routeCoordinates.length) return;
+      io.to(busId).emit("bus-location-update", {
+        busId,
+        latitude: finalPosition.lat,
+        longitude: finalPosition.lng,
+        speed: speed || 0,
+      });
+    } catch (err) {
+      console.error(err.message);
+    }
+  });
 
-//       const busId = "MH09-1234";
-
-//       const path = routeCoordinates;
-
-//       const point = path[currentIndex];
-
-//       if (!point) return;
-
-//       io.to(busId).emit("bus-location-update", {
-//         busId,
-//         latitude: point.lat,
-//         longitude: point.lng,
-//       });
-
-//       currentIndex++;
-
-//       if (currentIndex >= path.length) {
-//         currentIndex = 0;
-//       }
-//     }, 180);
-
-//     socket.on("disconnect", () => {
-//       console.log("❌ Socket Disconnected:", socket.id);
-//       clearInterval(movementInterval);
-//     });
-//   });
-// };
+  socket.on("disconnect", () => {
+    console.log("❌ Socket Disconnected:", socket.id);
+  });
+});

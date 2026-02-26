@@ -12,10 +12,12 @@ import busRoutes from "./routes/busRoutes.js";
 import routeRoutes from "./routes/routeRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 
-import Route from "./models/Route.js";
+import { startTrackingEngine } from "./utils/trackingEngine.js";
 
 dotenv.config();
 connectDB();
+
+/* ================= APP INIT ================= */
 
 const app = express();
 
@@ -36,129 +38,37 @@ app.use("/api/buses", busRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/booking", bookingRoutes);
 
-/* ================= SOCKET SERVER ================= */
+/* ================= HTTP + SOCKET SERVER ================= */
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
   },
 });
 
 app.set("io", io);
-
-/* ================= SMOOTH TRACKING ENGINE ================= */
-
-let pathPoints = [];
-let currentSegment = 0;
-let progress = 0;
-
-const BUS_ID = "MH09-1234";
-const BUS_SPEED_KMH = 32;
-const UPDATE_INTERVAL = 100;
-
-function toRad(value) {
-  return (value * Math.PI) / 180;
-}
-
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-async function loadPath() {
-  try {
-    const route = await Route.findOne();
-
-    if (!route?.path?.length) {
-      console.log("❌ No route path found");
-      return;
-    }
-
-    pathPoints = route.path.map((p) => ({
-      lat: Number(p.lat),
-      lng: Number(p.lng),
-    }));
-
-    console.log("✅ Tracking Path Loaded →", pathPoints.length);
-    startEngine();
-  } catch (err) {
-    console.error("Route Load Error:", err.message);
-  }
-}
-
-function startEngine() {
-  setInterval(() => {
-    if (pathPoints.length < 2) return;
-
-    const start = pathPoints[currentSegment];
-    const end = pathPoints[currentSegment + 1];
-
-    if (!end) {
-      currentSegment = 0;
-      progress = 0;
-      return;
-    }
-
-    const segmentDistance = getDistance(start.lat, start.lng, end.lat, end.lng);
-
-    const distancePerTick = (BUS_SPEED_KMH / 3600) * (UPDATE_INTERVAL / 1000);
-
-    const step = distancePerTick / segmentDistance;
-
-    progress += step;
-
-    if (progress >= 1) {
-      progress -= 1;
-      currentSegment++;
-
-      if (currentSegment >= pathPoints.length - 1) {
-        currentSegment = 0;
-      }
-    }
-
-    const newStart = pathPoints[currentSegment];
-    const newEnd = pathPoints[currentSegment + 1];
-
-    const lat = newStart.lat + (newEnd.lat - newStart.lat) * progress;
-
-    const lng = newStart.lng + (newEnd.lng - newStart.lng) * progress;
-
-    io.to(BUS_ID).emit("bus-location-update", {
-      busId: BUS_ID,
-      latitude: lat,
-      longitude: lng,
-      speed: BUS_SPEED_KMH,
-    });
-  }, UPDATE_INTERVAL);
-}
 
 /* ================= SOCKET CONNECTION ================= */
 
 io.on("connection", (socket) => {
   console.log("✅ Socket Connected:", socket.id);
 
-  socket.join(BUS_ID);
-
-  socket.on("driver-location-update", (data) => {
-    io.to(BUS_ID).emit("bus-location-update", data);
+  socket.on("track-bus", (routeNumber) => {
+    socket.join(routeNumber);
+    console.log("👀 Tracking Route Room →", routeNumber);
   });
 
   socket.on("disconnect", () => {
     console.log("❌ Socket Disconnected:", socket.id);
   });
 });
+
+/* ================= START SMART TRACKING ENGINE ================= */
+
+startTrackingEngine(io);
 
 /* ================= ERROR HANDLER ================= */
 
@@ -171,5 +81,3 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-loadPath();

@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 
 const routeSchema = new mongoose.Schema(
   {
-    routeNumber: { type: String, required: true },
+    routeNumber: {
+      type: String,
+      required: true,
+      index: true,
+    },
 
     routeName: String,
 
@@ -28,6 +32,4 @@ const routeSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const Route = mongoose.model("Route", routeSchema);
-
-export default Route;
+export default mongoose.model("Route", routeSchema);

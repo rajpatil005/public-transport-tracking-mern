@@ -1,7 +1,11 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// Protect routes
+/*
+====================================
+ Protect Middleware
+====================================
+*/
 export const protect = async (req, res, next) => {
   try {
     let token;
@@ -16,36 +20,62 @@ export const protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Not authorized to access this route",
+        message: "Authentication token missing",
       });
     }
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      req.user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select("-password");
 
-      next();
-    } catch (error) {
+    if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Not authorized to access this route",
+        message: "User not found",
       });
     }
+
+    req.user = user;
+
+    next();
   } catch (error) {
-    next(error);
+    return res.status(401).json({
+      success: false,
+      message: "Not authorized",
+    });
   }
 };
 
-// Role authorization
+/*
+====================================
+ Role Authorization Middleware
+====================================
+*/
 export const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: "Authentication required",
+        });
+      }
+
+      const userRole = req.user?.role;
+
+      if (!userRole || !roles.includes(userRole)) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not authorized to access this resource",
+        });
+      }
+
+      next();
+    } catch (error) {
+      return res.status(500).json({
         success: false,
-        message: `User role ${req.user.role} is not authorized to access this route`,
+        message: "Authorization error",
       });
     }
-    next();
   };
 };

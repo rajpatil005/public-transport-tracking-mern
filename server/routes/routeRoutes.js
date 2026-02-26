@@ -15,14 +15,21 @@ import { protect, authorize } from "../middleware/auth.js";
 
 const router = express.Router();
 
+/* ⭐ STATIC ROUTES FIRST */
+
 router.get("/search/:query", protect, searchRoutes);
 
 router.post("/init", protect, authorize("admin"), initKolhapurRoutes);
 
-/* ⭐ PATH GENERATION ROUTE */
+/* ⭐ PATH GENERATION ROUTE (IMPORTANT) */
+
 router.get("/generate-path", protect, authorize("admin"), generateOSRMPath);
 
+/* ⭐ CRUD ROUTES */
+
 router.route("/").get(getRoutes).post(protect, authorize("admin"), createRoute);
+
+/* ⭐ DYNAMIC ROUTE LAST */
 
 router
   .route("/:id")
