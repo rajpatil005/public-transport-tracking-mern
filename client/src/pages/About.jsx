@@ -1,4 +1,3 @@
-// client/src/pages/About.jsx
 import React from 'react';
 import { Bus, Users, Award, Shield, Clock, MapPin } from 'lucide-react';
 import Card from '../components/ui/Card';

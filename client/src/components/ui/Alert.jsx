@@ -1,4 +1,3 @@
-// client/src/components/ui/Alert.jsx
 import React, { useEffect } from 'react';
 import { 
   AlertCircle, 

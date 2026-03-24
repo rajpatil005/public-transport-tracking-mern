@@ -1,4 +1,3 @@
-// client/src/components/passenger/BusSchedule.jsx
 import React, { useState } from 'react';
 import { Calendar, Clock, Bus, ChevronDown, ChevronUp } from 'lucide-react';
 import Card from '../ui/Card';

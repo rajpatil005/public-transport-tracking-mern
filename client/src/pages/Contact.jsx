@@ -1,4 +1,3 @@
-// client/src/pages/Contact.jsx
 import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Clock, Send, MessageSquare } from 'lucide-react';
 import Card from '../components/ui/Card';

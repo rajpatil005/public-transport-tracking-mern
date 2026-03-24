@@ -1,23 +1,30 @@
 io.on("connection", (socket) => {
   console.log("✅ Socket Connected:", socket.id);
 
-  socket.on("track-bus", (busNumber) => {
-    socket.join(busNumber);
+  /*
+  ===============================
+  JOIN ROOM (ROUTE BASED)
+  ===============================
+  */
+  socket.on("track-bus", (routeNumber) => {
+    socket.join(routeNumber);
+    console.log(`🚌 Joined route room: ${routeNumber}`);
   });
 
   /*
-  ⭐ Driver Location Update
+  ===============================
+  DRIVER LOCATION UPDATE
+  ===============================
   */
-
   socket.on("driver-location-update", async (data) => {
     try {
-      const { busId, latitude, longitude, speed, routePath } = data;
+      const { busId, routeNumber, latitude, longitude, speed, routePath } = data;
 
-      if (!busId || !routePath?.length) return;
+      if (!latitude || !longitude || !routePath?.length) return;
 
       /*
       ===============================
-      PATH SNAPPING ⭐⭐⭐
+      PATH SNAPPING (IMPORTANT)
       ===============================
       */
 
@@ -27,7 +34,7 @@ io.on("connection", (socket) => {
       for (const pathPoint of routePath) {
         const dist = Math.hypot(
           latitude - pathPoint.lat,
-          longitude - pathPoint.lng,
+          longitude - pathPoint.lng
         );
 
         if (dist < minDistance) {
@@ -37,22 +44,29 @@ io.on("connection", (socket) => {
       }
 
       /*
-      If path snapping fails → fallback raw GPS
+      FINAL POSITION (SNAPPED TO ROAD)
       */
-
       const finalPosition = nearestPoint || {
         lat: latitude,
         lng: longitude,
       };
 
-      io.to(busId).emit("bus-location-update", {
+      /*
+      ===============================
+      EMIT TO CORRECT ROOM ⭐ FIX
+      ===============================
+      */
+      io.to(routeNumber).emit("bus-location-update", {
         busId,
+        routeNumber,
         latitude: finalPosition.lat,
         longitude: finalPosition.lng,
         speed: speed || 0,
       });
+
+      console.log("📡 Emitted:", finalPosition);
     } catch (err) {
-      console.error(err.message);
+      console.error("Socket Error:", err.message);
     }
   });
 

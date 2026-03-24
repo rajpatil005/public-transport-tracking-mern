@@ -1,4 +1,3 @@
-// client/src/components/ui/Loader.js
 import React from 'react';
 import { Bus } from 'lucide-react';
 

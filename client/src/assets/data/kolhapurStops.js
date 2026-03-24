@@ -1,4 +1,4 @@
-// Kolhapur City Bus Stops with details
+
 export const kolhapurStops = [
   {
     id: 1,
