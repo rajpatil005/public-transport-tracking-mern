@@ -94,3 +94,4 @@ mongoose.connection.once("open", async () => {
   }
 });
 // http://localhost:5000/api/auth/login
+// http://localhost:5000/api/routes/generate-path?routeId=69a06a97b9fada3d2f3c4b04
