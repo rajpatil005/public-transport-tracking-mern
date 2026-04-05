@@ -1,7 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Users, MapPin, Bus, ChevronRight, CheckCircle, Navigation } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import {
+  Calendar,
+  Clock,
+  Users,
+  CreditCard,
+  MapPin,
+  Bus,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle,
+  AlertCircle,
+  QrCode,
+  Download,
+  Printer,
+  Shield,
+  XCircle,
+  Navigation
+} from 'lucide-react';
 import Modal from '../ui/Model';
+import QRCode from 'qrcode.react';
 
 //========= Kolhapur City Bus Routes Data ===========//
 
@@ -12,10 +32,11 @@ const kolhapurRoutes = {
     source: "Central Bus Stand",
     destination: "Rankala Lake",
     fare: 15,
-    duration: "25 mins",
+    duration: "25",
     distance: "8 km",
     busType: "Regular Bus",
     departureTime: "Every 15 mins",
+    busId: "BUS101",
     stops: [
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
       { name: "Bindu Chowk", latitude: 16.6975, longitude: 74.2382 },
@@ -30,10 +51,11 @@ const kolhapurRoutes = {
     source: "Central Bus Stand",
     destination: "DYP City Mall",
     fare: 20,
-    duration: "30 mins",
+    duration: "30",
     distance: "10 km",
     busType: "AC Bus",
     departureTime: "Every 20 mins",
+    busId: "BUS102",
     stops: [
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
       { name: "Dasara Chowk", latitude: 16.7045, longitude: 74.2402 },
@@ -48,10 +70,11 @@ const kolhapurRoutes = {
     source: "Rankala Lake",
     destination: "Khasbag Maidan",
     fare: 15,
-    duration: "20 mins",
+    duration: "20",
     distance: "6 km",
     busType: "Regular Bus",
     departureTime: "Every 30 mins",
+    busId: "BUS103",
     stops: [
       { name: "Rankala Lake", latitude: 16.6878, longitude: 74.2167 },
       { name: "Mahalaxmi Temple", latitude: 16.6913, longitude: 74.2245 },
@@ -66,10 +89,11 @@ const kolhapurRoutes = {
     source: "Shivaji University",
     destination: "Central Bus Stand",
     fare: 15,
-    duration: "35 mins",
+    duration: "35",
     distance: "12 km",
     busType: "AC Bus",
     departureTime: "Every 25 mins",
+    busId: "BUS104",
     stops: [
       { name: "Shivaji University", latitude: 16.7222, longitude: 74.2481 },
       { name: "Kasaba Bawada", latitude: 16.7274, longitude: 74.2214 },
@@ -84,10 +108,11 @@ const kolhapurRoutes = {
     source: "Central Bus Stand",
     destination: "Rankala Lake",
     fare: 20,
-    duration: "40 mins",
+    duration: "40",
     distance: "14 km",
     busType: "AC Bus",
     departureTime: "Every 30 mins",
+    busId: "BUS105",
     stops: [
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
       { name: "Collector Office Kolhapur", latitude: 16.7074, longitude: 74.2390 },
@@ -95,21 +120,18 @@ const kolhapurRoutes = {
       { name: "New Palace Road", latitude: 16.7090, longitude: 74.2255 },
       { name: "Rankala Lake", latitude: 16.6878, longitude: 74.2167 },
     ],
-  }
-};
-
-// Add more routes as needed
-const additionalRoutes = {
+  },
   "106": {
     routeNumber: "106",
     name: "Central Bus Stand → Jyotiba Temple",
     source: "Central Bus Stand",
     destination: "Jyotiba Temple",
     fare: 60,
-    duration: "60 mins",
+    duration: "60",
     distance: "25 km",
     busType: "AC Bus",
     departureTime: "Every 2 hours",
+    busId: "BUS106",
     stops: [
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
       { name: "Panhala Naka", latitude: 16.7521, longitude: 74.2012 },
@@ -124,10 +146,11 @@ const additionalRoutes = {
     source: "Central Bus Stand",
     destination: "Panhala Fort",
     fare: 50,
-    duration: "45 mins",
+    duration: "45",
     distance: "20 km",
     busType: "Regular Bus",
     departureTime: "Every 1 hour",
+    busId: "BUS107",
     stops: [
       { name: "Central Bus Stand", latitude: 16.7017, longitude: 74.2431 },
       { name: "Panhala Naka", latitude: 16.7521, longitude: 74.2012 },
@@ -138,139 +161,384 @@ const additionalRoutes = {
   }
 };
 
-// Merge all routes
-const allRoutes = { ...kolhapurRoutes, ...additionalRoutes };
+const allRoutes = { ...kolhapurRoutes };
 
 const BookTicket = () => {
   const { routeId } = useParams();
   const navigate = useNavigate();
-  
+  const ticketRef = useRef(null);
+
   // Get route details from our data
   const route = allRoutes[routeId] || allRoutes["101"];
-  
+
   const [step, setStep] = useState(1);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [processing, setProcessing] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [bookingId, setBookingId] = useState('');
   const [selectedSeats, setSelectedSeats] = useState([]);
-  
+  const [paymentStatusMessage, setPaymentStatusMessage] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
+  // Payment form fields
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCVV, setCardCVV] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [selectedWallet, setSelectedWallet] = useState('');
+
   const [bookingData, setBookingData] = useState({
-    travelDate: new Date().toISOString().split('T')[0],
-    travelTime: '09:00',
+    travelDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
+    departureTime: '09:00 AM',
     passengers: 1,
-    passengerName: '',
-    passengerAge: '',
-    passengerGender: 'male',
-    contactNumber: '',
-    email: '',
-    pickupPoint: route.stops[0].name,
-    dropPoint: route.stops[route.stops.length - 1].name
+    passengerDetails: [],
+    boardingPoint: route.stops[0].name,
+    droppingPoint: route.stops[route.stops.length - 1].name
   });
 
-  // Generate seats (1-40)
-  const availableSeats = Array.from({ length: 40 }, (_, i) => i + 1);
+  // Generate seats (1-40) with some pre-booked seats for demo
+  const generateAvailableSeats = () => {
+    const allSeats = Array.from({ length: 40 }, (_, i) => i + 1);
+    // Randomly mark some seats as booked for demo (20% of seats)
+    const bookedSeats = [5, 12, 18, 25, 33, 7, 14, 22, 29, 38];
+    return allSeats.map(seat => ({
+      number: seat,
+      available: !bookedSeats.includes(seat)
+    }));
+  };
+
+  const [availableSeats, setAvailableSeats] = useState(generateAvailableSeats());
+
+  // Get all stops for dropdowns
+  const getStopsList = () => {
+    const stops = [];
+    if (route.source) stops.push(route.source);
+    if (route.stops && route.stops.length > 0) {
+      route.stops.forEach(s => stops.push(s.name));
+    }
+    if (route.destination) stops.push(route.destination);
+    return [...new Set(stops)];
+  };
+
+  // Calculate fare based on boarding and dropping points
+  const calculateFare = () => {
+    if (!route) return 0;
+    let baseFare = route.fare || 15;
+    if (bookingData.boardingPoint && bookingData.droppingPoint) {
+      const stopsList = getStopsList();
+      const startIndex = stopsList.indexOf(bookingData.boardingPoint);
+      const endIndex = stopsList.indexOf(bookingData.droppingPoint);
+      if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        const totalSegments = Math.max(1, stopsList.length - 1);
+        const numSegments = endIndex - startIndex;
+        baseFare = Math.max(5, Math.ceil((baseFare / totalSegments) * numSegments));
+      }
+    }
+    return baseFare * selectedSeats.length;
+  };
 
   // Handle seat selection
-  const toggleSeat = (seatNumber) => {
+  const handleSeatSelection = (seatNumber, isAvailable) => {
+    if (!isAvailable) {
+      setError('This seat is already booked');
+      return;
+    }
+    
     if (selectedSeats.includes(seatNumber)) {
       setSelectedSeats(selectedSeats.filter(s => s !== seatNumber));
+      setError('');
     } else {
       if (selectedSeats.length < bookingData.passengers) {
         setSelectedSeats([...selectedSeats, seatNumber]);
+        setError('');
       } else {
-        alert(`You can only select ${bookingData.passengers} seats`);
+        setError(`You can only select ${bookingData.passengers} ${bookingData.passengers === 1 ? 'seat' : 'seats'}`);
       }
     }
   };
 
-  // Calculate total fare
-  const totalFare = route.fare * selectedSeats.length;
+  // Render individual seat
+  const renderSeat = (seat) => {
+    const isSelected = selectedSeats.includes(seat.number);
+    return (
+      <button
+        key={seat.number}
+        onClick={() => handleSeatSelection(seat.number, seat.available)}
+        disabled={!seat.available}
+        className={`
+          relative w-10 h-10 rounded-t-xl rounded-b-sm border-2 transition-all flex items-center justify-center group
+          ${!seat.available
+            ? 'bg-gray-200 border-gray-300 cursor-not-allowed text-gray-400'
+            : isSelected
+              ? 'bg-blue-600 border-blue-800 text-white shadow-md transform scale-105'
+              : 'bg-white border-gray-400 hover:border-blue-500 hover:bg-blue-50 text-gray-700'
+          }
+        `}
+        title={!seat.available ? 'Seat Booked' : `Seat ${seat.number}`}
+      >
+        <span className="text-xs font-bold">{seat.number}</span>
+      </button>
+    );
+  };
+
+  // Handle passenger count change
+  const handlePassengerCount = (change) => {
+    const newCount = bookingData.passengers + change;
+    if (newCount >= 1 && newCount <= 6) {
+      setBookingData(prev => ({ ...prev, passengers: newCount }));
+      setSelectedSeats([]);
+      setError('');
+    }
+  };
+
+  // Handle passenger details change
+  const handlePassengerChange = (index, field, value) => {
+    setBookingData((prev) => {
+      const newDetails = [...prev.passengerDetails];
+      if (!newDetails[index]) {
+        newDetails[index] = { name: '', age: '', gender: '' };
+      }
+      newDetails[index][field] = value;
+      return { ...prev, passengerDetails: newDetails };
+    });
+  };
 
   // Handle next step
   const handleNext = () => {
     if (step === 1) {
       if (!bookingData.travelDate) {
-        alert('Please select travel date');
+        setError('Please select a travel date');
         return;
       }
+      if (!bookingData.departureTime) {
+        setError('Please select a departure time');
+        return;
+      }
+      if (!bookingData.boardingPoint) {
+        setError('Please select a boarding point');
+        return;
+      }
+      if (!bookingData.droppingPoint) {
+        setError('Please select a dropping point');
+        return;
+      }
+      
+      const stopsList = getStopsList();
+      const startIndex = stopsList.indexOf(bookingData.boardingPoint);
+      const endIndex = stopsList.indexOf(bookingData.droppingPoint);
+      if (startIndex !== -1 && endIndex !== -1 && startIndex >= endIndex) {
+        setError('Dropping point must be after your Boarding point');
+        return;
+      }
+
       if (selectedSeats.length !== bookingData.passengers) {
-        alert(`Please select ${bookingData.passengers} seats`);
+        setError(`Please select ${bookingData.passengers} ${bookingData.passengers === 1 ? 'seat' : 'seats'}`);
         return;
       }
-      if (!bookingData.passengerName || !bookingData.contactNumber) {
-        alert('Please fill passenger details');
-        return;
+      
+      // Validate passenger details
+      for (let i = 0; i < selectedSeats.length; i++) {
+        const pd = bookingData.passengerDetails[i];
+        if (!pd || !pd.name || !pd.age || !pd.gender) {
+          const missing = [];
+          if (!pd?.name) missing.push('Name');
+          if (!pd?.age) missing.push('Age');
+          if (!pd?.gender) missing.push('Gender');
+          setError(`Seat ${selectedSeats[i]}: ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} required`);
+          return;
+        }
       }
-      setShowConfirmModal(true);
     }
+    setError('');
+    setStep(step + 1);
   };
 
-  // Confirm booking and save to localStorage
-  const confirmBooking = () => {
-    const newBookingId = 'KB' + route.routeNumber + Math.random().toString(36).substr(2, 6).toUpperCase();
-    
-    const newBooking = {
-      id: newBookingId,
-      bookingId: newBookingId,
-      routeId: route.routeNumber,
-      routeNumber: route.routeNumber,
-      routeName: route.name,
-      source: route.source,
-      destination: route.destination,
-      travelDate: bookingData.travelDate,
-      travelTime: bookingData.travelTime,
-      seats: selectedSeats,
-      passengerName: bookingData.passengerName,
-      passengerAge: bookingData.passengerAge,
-      passengerGender: bookingData.passengerGender,
-      contactNumber: bookingData.contactNumber,
-      email: bookingData.email,
-      pickupPoint: bookingData.pickupPoint,
-      dropPoint: bookingData.dropPoint,
-      totalFare: totalFare,
-      fare: route.fare,
-      status: 'confirmed',
-      bookingDate: new Date().toISOString()
-    };
-
-    // Get existing bookings from localStorage
-    const existingBookings = localStorage.getItem('kolhapurBusBookings');
-    let bookings = [];
-    
-    if (existingBookings) {
-      bookings = JSON.parse(existingBookings);
-    }
-    
-    // Add new booking
-    bookings.push(newBooking);
-    
-    // Save back to localStorage
-    localStorage.setItem('kolhapurBusBookings', JSON.stringify(bookings));
-    
-    // Also save to session storage for immediate display
-    sessionStorage.setItem('lastBooking', JSON.stringify(newBooking));
-    
-    setShowConfirmModal(false);
-    setBookingComplete(true);
-    setBookingId(newBookingId);
-  };
-
-  // Handle back
   const handleBack = () => {
     setStep(step - 1);
+    setError('');
   };
 
-  // Get today's date in YYYY-MM-DD format
+  // Process payment and create booking
+  const handlePayment = async () => {
+    setProcessing(true);
+    setError('');
+    setStep(3);
+
+    try {
+      setPaymentStatusMessage('Connecting to secure gateway...');
+      await new Promise(r => setTimeout(r, 1500));
+
+      setPaymentStatusMessage('Verifying payment details...');
+      await new Promise(r => setTimeout(r, 1500));
+
+      setPaymentStatusMessage('Processing transaction...');
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Create booking ID
+      const newBookingId = 'KB' + route.routeNumber + Math.random().toString(36).substr(2, 6).toUpperCase();
+      
+      const newBooking = {
+        id: newBookingId,
+        bookingId: newBookingId,
+        routeId: route.routeNumber,
+        routeNumber: route.routeNumber,
+        routeName: route.name,
+        source: route.source,
+        destination: route.destination,
+        travelDate: bookingData.travelDate,
+        departureTime: bookingData.departureTime,
+        boardingPoint: bookingData.boardingPoint,
+        droppingPoint: bookingData.droppingPoint,
+        seats: selectedSeats,
+        passengerDetails: bookingData.passengerDetails,
+        contactNumber: bookingData.contactNumber || '9876543210',
+        email: bookingData.email || 'customer@example.com',
+        totalFare: calculateFare(),
+        fare: route.fare,
+        status: 'confirmed',
+        bookingDate: new Date().toISOString(),
+        paymentMethod: paymentMethod,
+        qrCode: newBookingId
+      };
+
+      // Get existing bookings from localStorage
+      const existingBookings = localStorage.getItem('kolhapurBusBookings');
+      let bookings = [];
+      
+      if (existingBookings) {
+        bookings = JSON.parse(existingBookings);
+      }
+      
+      // Add new booking
+      bookings.push(newBooking);
+      
+      // Save back to localStorage
+      localStorage.setItem('kolhapurBusBookings', JSON.stringify(bookings));
+      
+      // Also save to session storage for immediate display
+      sessionStorage.setItem('lastBooking', JSON.stringify(newBooking));
+
+      setBookingId(newBookingId);
+      setBookingComplete(true);
+      setStep(4);
+      setSuccess('Booking confirmed successfully!');
+    } catch (error) {
+      setError('Payment failed. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Cancel booking
+  const handleCancelBooking = async () => {
+    setCancelling(true);
+    try {
+      // Get existing bookings
+      const existingBookings = localStorage.getItem('kolhapurBusBookings');
+      if (existingBookings) {
+        let bookings = JSON.parse(existingBookings);
+        // Update booking status
+        bookings = bookings.map(booking => 
+          booking.bookingId === bookingId 
+            ? { ...booking, status: 'cancelled', cancelledAt: new Date().toISOString() }
+            : booking
+        );
+        localStorage.setItem('kolhapurBusBookings', JSON.stringify(bookings));
+      }
+      setCancelled(true);
+      setShowCancelModal(false);
+      setSuccess('');
+    } catch (err) {
+      setError('Failed to cancel booking');
+      setShowCancelModal(false);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Download ticket as PDF
+  const downloadTicket = async () => {
+    if (!ticketRef.current) return;
+
+    try {
+      await new Promise(r => setTimeout(r, 100));
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`KBT-Ticket-${bookingId}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setError('Could not download PDF ticket. Please try printing instead.');
+    }
+  };
+
+  // Print ticket
+  const printTicket = () => {
+    window.print();
+  };
+
+  // Get today's date for min date
   const today = new Date().toISOString().split('T')[0];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
-        {/* Header with Route Info */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Book Bus Ticket</h1>
-          <p className="text-sm text-gray-600 mt-1">Kolhapur City Transport • Route {route.routeNumber}</p>
+      <div className="max-w-4xl mx-auto">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {[1, 2, 3, 4].map((s) => (
+              <React.Fragment key={s}>
+                <div className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step > s
+                      ? 'bg-green-500 text-white'
+                      : step === s
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-300 text-gray-600'
+                    }`}>
+                    {step > s ? <CheckCircle className="h-5 w-5" /> : s}
+                  </div>
+                  <span className="text-xs mt-2 text-gray-600">
+                    {s === 1 && 'Details'}
+                    {s === 2 && 'Payment'}
+                    {s === 3 && 'Processing'}
+                    {s === 4 && 'Confirm'}
+                  </span>
+                </div>
+                {s < 4 && (
+                  <ChevronRight className={`h-5 w-5 ${step > s ? 'text-green-500' : 'text-gray-400'}`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
+
+        {/* Error/Success Messages */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <span className="text-sm font-medium">{error}</span>
+            <button onClick={() => setError('')} className="ml-auto text-red-500 hover:text-red-700">×</button>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 flex-shrink-0" />
+            <span className="text-sm font-medium">{success}</span>
+            <button onClick={() => setSuccess('')} className="ml-auto text-green-500 hover:text-green-700">×</button>
+          </div>
+        )}
 
         {/* Route Info Card */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-blue-500">
@@ -304,7 +572,7 @@ const BookTicket = () => {
               <Clock className="h-4 w-4 text-green-600 mr-2" />
               <div>
                 <span className="text-sm text-gray-600">Duration</span>
-                <p className="font-medium">{route.duration}</p>
+                <p className="font-medium">{route.duration} mins</p>
               </div>
             </div>
             <div className="flex items-center">
@@ -315,21 +583,6 @@ const BookTicket = () => {
               </div>
             </div>
           </div>
-
-          {/* Route Stops */}
-          <div className="mt-4 bg-gray-50 p-3 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Route Stops:</h4>
-            <div className="space-y-1">
-              {route.stops.map((stop, index) => (
-                <div key={index} className="flex items-center text-sm">
-                  <div className={`w-2 h-2 rounded-full mr-2 ${index === 0 ? 'bg-green-500' : index === route.stops.length - 1 ? 'bg-red-500' : 'bg-blue-400'}`}></div>
-                  <span className="text-gray-600">{stop.name}</span>
-                  {index === 0 && <span className="ml-2 text-xs text-green-600">(Boarding)</span>}
-                  {index === route.stops.length - 1 && <span className="ml-2 text-xs text-red-600">(Dropping)</span>}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Step 1: Booking Details */}
@@ -337,9 +590,9 @@ const BookTicket = () => {
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold mb-4">Enter Booking Details</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Travel Date and Time */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Travel Date
@@ -354,59 +607,50 @@ const BookTicket = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Travel Time
+                    Departure Time
                   </label>
                   <select
-                    value={bookingData.travelTime}
-                    onChange={(e) => setBookingData({...bookingData, travelTime: e.target.value})}
+                    value={bookingData.departureTime}
+                    onChange={(e) => setBookingData({...bookingData, departureTime: e.target.value})}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="06:00">6:00 AM</option>
-                    <option value="07:00">7:00 AM</option>
-                    <option value="08:00">8:00 AM</option>
-                    <option value="09:00">9:00 AM</option>
-                    <option value="10:00">10:00 AM</option>
-                    <option value="11:00">11:00 AM</option>
-                    <option value="12:00">12:00 PM</option>
-                    <option value="13:00">1:00 PM</option>
-                    <option value="14:00">2:00 PM</option>
-                    <option value="15:00">3:00 PM</option>
-                    <option value="16:00">4:00 PM</option>
-                    <option value="17:00">5:00 PM</option>
-                    <option value="18:00">6:00 PM</option>
-                    <option value="19:00">7:00 PM</option>
-                    <option value="20:00">8:00 PM</option>
+                    <option value="06:00 AM">6:00 AM</option>
+                    <option value="08:30 AM">8:30 AM</option>
+                    <option value="11:00 AM">11:00 AM</option>
+                    <option value="02:00 PM">2:00 PM</option>
+                    <option value="05:30 PM">5:30 PM</option>
+                    <option value="09:00 PM">9:00 PM</option>
                   </select>
                 </div>
               </div>
 
-              {/* Pickup and Drop Points */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Boarding and Dropping Points */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pickup Point
+                    Boarding Point
                   </label>
                   <select
-                    value={bookingData.pickupPoint}
-                    onChange={(e) => setBookingData({...bookingData, pickupPoint: e.target.value})}
+                    value={bookingData.boardingPoint}
+                    onChange={(e) => setBookingData({...bookingData, boardingPoint: e.target.value})}
                     className="w-full p-2 border rounded-lg"
                   >
-                    {route.stops.map((stop, index) => (
-                      <option key={index} value={stop.name}>{stop.name}</option>
+                    {getStopsList().map((stop, index) => (
+                      <option key={index} value={stop}>{stop}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Drop Point
+                    Dropping Point
                   </label>
                   <select
-                    value={bookingData.dropPoint}
-                    onChange={(e) => setBookingData({...bookingData, dropPoint: e.target.value})}
+                    value={bookingData.droppingPoint}
+                    onChange={(e) => setBookingData({...bookingData, droppingPoint: e.target.value})}
                     className="w-full p-2 border rounded-lg"
                   >
-                    {route.stops.map((stop, index) => (
-                      <option key={index} value={stop.name}>{stop.name}</option>
+                    {getStopsList().map((stop, index) => (
+                      <option key={index} value={stop}>{stop}</option>
                     ))}
                   </select>
                 </div>
@@ -419,115 +663,135 @@ const BookTicket = () => {
                 </label>
                 <div className="flex items-center space-x-4">
                   <button
-                    onClick={() => setBookingData({...bookingData, passengers: Math.max(1, bookingData.passengers - 1)})}
-                    className="w-10 h-10 border rounded-lg hover:bg-gray-100 text-xl"
+                    onClick={() => handlePassengerCount(-1)}
+                    disabled={bookingData.passengers <= 1}
+                    className="w-10 h-10 border rounded-lg hover:bg-gray-100 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     -
                   </button>
                   <span className="text-2xl font-bold w-12 text-center">{bookingData.passengers}</span>
                   <button
-                    onClick={() => setBookingData({...bookingData, passengers: Math.min(4, bookingData.passengers + 1)})}
-                    className="w-10 h-10 border rounded-lg hover:bg-gray-100 text-xl"
+                    onClick={() => handlePassengerCount(1)}
+                    disabled={bookingData.passengers >= 6}
+                    className="w-10 h-10 border rounded-lg hover:bg-gray-100 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Maximum 4 passengers per booking</p>
+                <p className="text-xs text-gray-500 mt-1">Maximum 6 passengers per booking</p>
               </div>
 
               {/* Seat Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Seats (Select {bookingData.passengers} seats)
+                <label className="block text-sm font-medium text-gray-700 mb-4 text-center">
+                  Select Your Seats (Select {bookingData.passengers} seat{bookingData.passengers !== 1 ? 's' : ''})
                 </label>
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <div className="grid grid-cols-5 gap-2 max-w-xs mx-auto">
-                    {availableSeats.map((seat) => (
-                      <button
-                        key={seat}
-                        onClick={() => toggleSeat(seat)}
-                        className={`
-                          p-2 rounded-lg text-center text-sm font-medium
-                          ${selectedSeats.includes(seat)
-                            ? 'bg-green-500 text-white'
-                            : 'bg-white hover:bg-blue-100 border'
-                          }
-                        `}
-                      >
-                        {seat}
-                      </button>
+                <div className="bg-gray-50 p-6 rounded-3xl max-w-sm mx-auto border-4 border-gray-300 relative shadow-inner">
+                  {/* Bus front indicator */}
+                  <div className="text-center mb-4">
+                    <div className="inline-block bg-gray-700 text-white text-xs px-3 py-1 rounded-full">FRONT</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-6 gap-2 max-w-[320px] mx-auto">
+                    {Array.from({ length: Math.ceil(availableSeats.length / 5) }).map((_, rowIndex) => (
+                      <React.Fragment key={rowIndex}>
+                        {renderSeat(availableSeats[rowIndex * 5])}
+                        {renderSeat(availableSeats[rowIndex * 5 + 1])}
+                        
+                        {/* Aisle */}
+                        <div className="w-4 flex items-center justify-center">
+                          <div className="w-0.5 h-8 bg-gray-300"></div>
+                        </div>
+                        
+                        {renderSeat(availableSeats[rowIndex * 5 + 2])}
+                        {renderSeat(availableSeats[rowIndex * 5 + 3])}
+                        {renderSeat(availableSeats[rowIndex * 5 + 4])}
+                      </React.Fragment>
                     ))}
                   </div>
-                  <div className="flex justify-center space-x-4 mt-4">
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-white border rounded mr-1"></div>
-                      <span className="text-xs">Available</span>
+
+                  <div className="flex justify-center space-x-6 mt-8 pt-4 border-t border-gray-200">
+                    <div className="flex flex-col items-center">
+                      <div className="w-6 h-6 border-2 border-gray-400 bg-white rounded-t-xl rounded-b-sm mb-2"></div>
+                      <span className="text-xs font-medium text-gray-600">Available</span>
                     </div>
-                    <div className="flex items-center">
-                      <div className="w-4 h-4 bg-green-500 rounded mr-1"></div>
-                      <span className="text-xs">Selected</span>
+                    <div className="flex flex-col items-center">
+                      <div className="w-6 h-6 border-2 border-blue-800 bg-blue-600 rounded-t-xl rounded-b-sm mb-2"></div>
+                      <span className="text-xs font-medium text-gray-600">Selected</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-6 h-6 border-2 border-gray-300 bg-gray-200 rounded-t-xl rounded-b-sm mb-2"></div>
+                      <span className="text-xs font-medium text-gray-600">Booked</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Passenger Details */}
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Passenger Details</h4>
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={bookingData.passengerName}
-                    onChange={(e) => setBookingData({...bookingData, passengerName: e.target.value})}
-                    className="w-full p-2 border rounded-lg"
-                  />
+              {selectedSeats.length > 0 && (
+                <div className="border-t pt-6">
+                  <h4 className="font-medium mb-4">Passenger Details</h4>
+                  {selectedSeats.map((seat, index) => (
+                    <div key={seat} className="bg-white border rounded-lg p-4 mb-4 shadow-sm">
+                      <h5 className="font-medium mb-3 text-blue-800">Seat {seat}</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input
+                          type="text"
+                                          placeholder="Full Name"
+                          value={bookingData.passengerDetails[index]?.name || ''}
+                          onChange={(e) => {
+                            const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                            handlePassengerChange(index, 'name', lettersOnly);
+                          }}
+                          className="p-2 border rounded-lg"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Age"
+                          value={bookingData.passengerDetails[index]?.age || ''}
+                          onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
+                          className="p-2 border rounded-lg"
+                        />
+                        <select
+                          value={bookingData.passengerDetails[index]?.gender || ''}
+                          onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
+                          className="p-2 border rounded-lg"
+                        >
+                          <option value="" disabled>Select Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <input
-                      type="number"
-                      placeholder="Age"
-                      value={bookingData.passengerAge}
-                      onChange={(e) => setBookingData({...bookingData, passengerAge: e.target.value})}
+                      type="tel"
+                      placeholder="Contact Number *"
+                      value={bookingData.contactNumber}
+                      onChange={(e) => setBookingData({...bookingData, contactNumber: e.target.value})}
                       className="p-2 border rounded-lg"
                     />
-                    
-                    <select
-                      value={bookingData.passengerGender}
-                      onChange={(e) => setBookingData({...bookingData, passengerGender: e.target.value})}
+                    <input
+                      type="email"
+                      placeholder="Email (Optional)"
+                      value={bookingData.email}
+                      onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
                       className="p-2 border rounded-lg"
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
+                    />
                   </div>
-
-                  <input
-                    type="tel"
-                    placeholder="Contact Number"
-                    value={bookingData.contactNumber}
-                    onChange={(e) => setBookingData({...bookingData, contactNumber: e.target.value})}
-                    className="w-full p-2 border rounded-lg"
-                  />
-
-                  <input
-                    type="email"
-                    placeholder="Email (Optional)"
-                    value={bookingData.email}
-                    onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
-                    className="w-full p-2 border rounded-lg"
-                  />
                 </div>
-              </div>
+              )}
 
               {/* Fare Summary */}
-              <div className="bg-blue-50 p-4 rounded-lg mt-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total Fare:</span>
-                  <span className="text-2xl font-bold text-blue-600">₹{totalFare}</span>
+                  <span className="text-2xl font-bold text-blue-600">₹{calculateFare()}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">₹{route.fare} × {selectedSeats.length} seats</p>
+                <p className="text-xs text-gray-500 mt-1">₹{Math.ceil(calculateFare() / Math.max(1, selectedSeats.length))} × {selectedSeats.length} seats</p>
               </div>
 
               {/* Continue Button */}
@@ -541,100 +805,184 @@ const BookTicket = () => {
           </div>
         )}
 
-        {/* Step 2: Payment (Simplified) */}
+        {/* Step 2: Payment */}
         {!bookingComplete && step === 2 && (
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-semibold mb-4">Payment Details</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Payment Methods */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
                   Select Payment Method
                 </label>
                 <div className="grid grid-cols-3 gap-3">
-                  {['Card', 'UPI', 'Wallet'].map((method) => (
+                  {['card', 'upi', 'wallet'].map((method) => (
                     <button
                       key={method}
-                      className="p-3 border rounded-lg hover:bg-gray-50 text-center"
+                      onClick={() => setPaymentMethod(method)}
+                      className={`
+                        p-3 border rounded-lg text-center capitalize
+                        ${paymentMethod === method
+                          ? 'border-blue-600 bg-blue-50 text-blue-600'
+                          : 'border-gray-300 hover:border-gray-400'
+                        }
+                      `}
                     >
-                      {method}
+                      {method === 'card' ? '💳 Card' : method === 'upi' ? '📱 UPI' : '👛 Wallet'}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Simple Card Form */}
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Card Number"
-                  className="w-full p-2 border rounded-lg"
-                  maxLength="16"
-                />
-                <div className="grid grid-cols-2 gap-3">
+              {/* Card Payment Form */}
+              {paymentMethod === 'card' && (
+                <div className="space-y-4">
                   <input
                     type="text"
-                    placeholder="MM/YY"
-                    className="p-2 border rounded-lg"
+                    placeholder="Card Number"
+                    maxLength="16"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                    className="w-full p-2 border rounded-lg"
                   />
+                  <div className="grid grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="MM/YY"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(e.target.value)}
+                      className="p-2 border rounded-lg"
+                    />
+                    <input
+                      type="password"
+                      placeholder="CVV"
+                      maxLength="3"
+                      value={cardCVV}
+                      onChange={(e) => setCardCVV(e.target.value)}
+                      className="p-2 border rounded-lg"
+                    />
+                  </div>
                   <input
-                    type="password"
-                    placeholder="CVV"
-                    className="p-2 border rounded-lg"
-                    maxLength="3"
+                    type="text"
+                    placeholder="Card Holder Name"
+                    value={cardHolder}
+                    onChange={(e) => setCardHolder(e.target.value)}
+                    className="w-full p-2 border rounded-lg"
                   />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Card Holder Name"
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
+              )}
+
+              {/* UPI Payment */}
+              {paymentMethod === 'upi' && (
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Enter UPI ID (e.g., name@okhdfcbank)"
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    className="w-full p-2 border rounded-lg"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    You will receive a payment request on your UPI app
+                  </p>
+                </div>
+              )}
+
+              {/* Wallet Payment */}
+              {paymentMethod === 'wallet' && (
+                <div className="space-y-2">
+                  {['Paytm Wallet', 'Google Pay', 'PhonePe', 'Amazon Pay'].map((wallet) => (
+                    <button
+                      key={wallet}
+                      onClick={() => setSelectedWallet(wallet)}
+                      className={`w-full px-4 py-3 rounded-lg border text-left transition-all ${
+                        selectedWallet === wallet
+                          ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
+                          : 'border-gray-300 hover:border-gray-400 text-gray-700'
+                      }`}
+                    >
+                      {wallet}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Booking Summary */}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Booking Summary</h4>
-                <div className="space-y-1 text-sm">
+                <h4 className="font-semibold mb-3">Booking Summary</h4>
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Route:</span>
-                    <span className="font-medium">Route {route.routeNumber}</span>
+                    <span className="font-medium text-right max-w-[60%]">
+                      {bookingData.boardingPoint} → {bookingData.droppingPoint}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Date:</span>
-                    <span>{new Date(bookingData.travelDate).toLocaleDateString()}</span>
+                    <span className="font-medium">
+                      {new Date(bookingData.travelDate).toLocaleDateString()}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Time:</span>
-                    <span>{bookingData.travelTime}</span>
+                    <span className="font-medium">{bookingData.departureTime}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Passengers:</span>
+                    <span className="font-medium">{bookingData.passengers}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Seats:</span>
-                    <span className="font-bold text-green-600">{selectedSeats.join(', ')}</span>
+                    <span className="font-medium text-green-600">{selectedSeats.join(', ')}</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t mt-2">
+                  <div className="flex justify-between pt-2 border-t">
                     <span className="font-semibold">Total Amount:</span>
-                    <span className="text-xl font-bold text-blue-600">₹{totalFare}</span>
+                    <span className="text-xl font-bold text-blue-600">
+                      ₹{calculateFare()}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Action Buttons */}
               <div className="flex space-x-3">
                 <button
                   onClick={handleBack}
                   className="flex-1 border py-3 rounded-lg hover:bg-gray-50"
                 >
-                  Back
+                  <ChevronLeft className="inline mr-2 h-4 w-4" /> Back
                 </button>
                 <button
                   onClick={() => {
-                    setStep(3);
-                    setTimeout(() => confirmBooking(), 1500);
+                    setError('');
+                    if (paymentMethod === 'card') {
+                      const missing = [];
+                      if (!cardNumber) missing.push('Card Number');
+                      if (!cardExpiry) missing.push('Expiry (MM/YY)');
+                      if (!cardCVV) missing.push('CVV');
+                      if (!cardHolder) missing.push('Card Holder Name');
+                      if (missing.length > 0) {
+                        setError(`${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} required`);
+                        return;
+                      }
+                    } else if (paymentMethod === 'upi') {
+                      if (!upiId) {
+                        setError('UPI ID is required');
+                        return;
+                      }
+                    } else if (paymentMethod === 'wallet') {
+                      if (!selectedWallet) {
+                        setError('Please select a wallet to pay');
+                        return;
+                      }
+                    }
+                    handlePayment();
                   }}
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium"
+                  disabled={processing}
+                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50"
                 >
-                  Pay ₹{totalFare}
+                  {processing ? 'Processing...' : `Pay ₹${calculateFare()}`}
                 </button>
               </div>
             </div>
@@ -644,14 +992,27 @@ const BookTicket = () => {
         {/* Step 3: Processing */}
         {!bookingComplete && step === 3 && (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <h3 className="text-xl font-semibold">Processing Payment</h3>
-            <p className="text-gray-600 mt-2">Please wait while we confirm your booking...</p>
+            <div className="mb-6 flex justify-center">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-b-blue-600"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <Shield className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Secure Payment Gateway</h3>
+            <p className="text-gray-600 animate-pulse">
+              {paymentStatusMessage || 'Processing your payment...'}
+            </p>
+            <div className="mt-8 bg-blue-50 p-4 rounded-lg text-sm text-left border border-blue-100">
+              <p className="font-medium text-blue-800">Do not refresh or press back!</p>
+              <p className="text-gray-600 mt-1">We are securely processing your transaction. This might take a few moments.</p>
+            </div>
           </div>
         )}
 
-        {/* Booking Complete */}
-        {bookingComplete && (
+        {/* Step 4: Booking Complete */}
+        {bookingComplete && step === 4 && (
           <div className="bg-white rounded-lg shadow-md p-8">
             <div className="text-center mb-6">
               <div className="inline-flex p-3 bg-green-100 rounded-full mb-4">
@@ -662,144 +1023,154 @@ const BookTicket = () => {
             </div>
 
             {/* Ticket Details */}
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-lg mb-6 border-2 border-blue-200">
-              <div className="text-center mb-4">
-                <h3 className="font-bold text-lg">KOLHAPUR CITY BUS TRANSPORT</h3>
-                <p className="text-sm text-gray-600">Route {route.routeNumber} • E-Ticket</p>
+            <div
+              ref={ticketRef}
+              className="bg-white p-10 rounded-lg mb-6 border-2 border-dashed border-gray-300 shadow-sm mx-auto max-w-lg"
+            >
+              <div className="text-center mb-8">
+                <div className="flex justify-center mb-3">
+                  <Bus className="h-10 w-10 text-blue-600" />
+                </div>
+                <h3 className="font-bold text-2xl text-blue-900">KOLHAPUR CITY BUS TRANSPORT</h3>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mt-2">Confirmed E-Ticket</p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ticket ID:</span>
+              <div className="space-y-4 text-base">
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500">Ticket ID:</span>
                   <span className="font-mono font-bold">{bookingId}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Passenger:</span>
-                  <span className="font-medium">{bookingData.passengerName}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500">Passenger(s):</span>
+                  <span className="font-medium text-right max-w-[60%]">
+                    {bookingData.passengerDetails.map(pd => pd?.name).filter(Boolean).join(', ')}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Route:</span>
-                  <span className="font-medium">{route.name}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500">Route:</span>
+                  <span className="font-medium text-right max-w-[65%]">
+                    {bookingData.boardingPoint} <span className="text-gray-400 mx-1">→</span> {bookingData.droppingPoint}
+                    <br />
+                    <span className="text-xs text-blue-600 font-semibold">{route.name}</span>
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Date & Time:</span>
-                  <span>{new Date(bookingData.travelDate).toLocaleDateString()} • {bookingData.travelTime}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500">Date & Time:</span>
+                  <span className="font-medium text-right">
+                    {new Date(bookingData.travelDate).toLocaleDateString()} <br />
+                    <span className="text-sm font-normal text-gray-500">{bookingData.departureTime}</span>
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">From:</span>
-                  <span>{bookingData.pickupPoint}</span>
+                <div className="flex justify-between items-start">
+                  <span className="text-gray-500">Seats:</span>
+                  <span className="font-medium text-lg text-green-600 font-bold">{selectedSeats.join(', ')}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">To:</span>
-                  <span>{bookingData.dropPoint}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Seats:</span>
-                  <span className="font-bold text-green-600">{selectedSeats.join(', ')}</span>
-                </div>
-                <div className="flex justify-between pt-2 border-t">
-                  <span className="font-semibold">Total Paid:</span>
-                  <span className="text-xl font-bold text-green-600">₹{totalFare}</span>
-                </div>
-              </div>
-
-              {/* Simple QR Code Placeholder */}
-              <div className="flex justify-center my-4">
-                <div className="bg-white p-2 border rounded">
-                  <div className="w-32 h-32 bg-gray-200 flex items-center justify-center">
-                    <span className="text-xs text-gray-500">Scan QR Code</span>
-                  </div>
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                  <span className="text-gray-500 font-semibold">Fare Paid:</span>
+                  <span className="font-bold text-green-600 text-xl">₹{calculateFare()}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-center text-gray-500">
+              {/* QR Code */}
+              <div className="flex justify-center mt-8 pt-6 border-t border-dashed border-gray-200">
+                <QRCode
+                  value={JSON.stringify({
+                    bookingId,
+                    route: route.name,
+                    seats: selectedSeats,
+                    date: bookingData.travelDate,
+                    time: bookingData.departureTime
+                  })}
+                  size={150}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+
+              <p className="text-xs text-center text-gray-500 mt-4">
                 Show this QR code to the conductor while boarding
               </p>
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => {
-                  alert('Ticket downloaded! Check your downloads folder.');
-                }}
-                className="border py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center"
-              >
-                Download Ticket
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="border py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center"
-              >
-                Print Ticket
-              </button>
-              <button
-                onClick={() => navigate('/my-bookings')}
-                className="col-span-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
-              >
-                View My Bookings
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="col-span-2 border py-2 rounded-lg hover:bg-gray-50"
-              >
-                Book Another Ticket
-              </button>
-            </div>
+            {!cancelled ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={downloadTicket}
+                    className="border py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </button>
+                  <button
+                    onClick={printTicket}
+                    className="border py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print
+                  </button>
+                  <button
+                    onClick={() => navigate('/my-bookings')}
+                    className="col-span-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    View My Bookings
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    className="w-full border border-red-400 text-red-600 py-2 rounded-lg hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors flex items-center justify-center"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Cancel Booking
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200">
+                <XCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-red-700">Booking Cancelled</h3>
+                <p className="text-sm text-red-600 mt-1">Your booking has been cancelled and a refund will be processed.</p>
+                <button
+                  onClick={() => navigate('/')}
+                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                >
+                  Book Another Ticket
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Confirmation Modal */}
+        {/* Cancel Confirmation Modal */}
         <Modal
-          isOpen={showConfirmModal}
-          onClose={() => setShowConfirmModal(false)}
-          title="Confirm Booking"
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+          title="Cancel Booking?"
         >
-          <div className="space-y-4">
-            <p className="text-gray-600">Please review your booking details:</p>
-            
-            <div className="bg-gray-50 p-3 rounded space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Route:</span>
-                <span className="font-medium">Route {route.routeNumber}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">From - To:</span>
-                <span>{route.source} → {route.destination}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date & Time:</span>
-                <span>{new Date(bookingData.travelDate).toLocaleDateString()} • {bookingData.travelTime}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Seats:</span>
-                <span className="font-bold text-green-600">{selectedSeats.join(', ')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Passenger:</span>
-                <span>{bookingData.passengerName}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t">
-                <span className="font-semibold">Total Amount:</span>
-                <span className="text-xl font-bold text-blue-600">₹{totalFare}</span>
-              </div>
+          <div className="text-center">
+            <div className="inline-flex p-3 bg-red-100 rounded-full mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
-
-            <div className="flex space-x-3 pt-2">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Cancel Booking?</h3>
+            <p className="text-gray-600 text-sm">
+              Are you sure you want to cancel ticket <strong>{bookingId}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setShowConfirmModal(false)}
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelling}
                 className="flex-1 border py-2 rounded-lg hover:bg-gray-50"
               >
-                Edit Details
+                Keep Booking
               </button>
               <button
-                onClick={() => {
-                  setShowConfirmModal(false);
-                  setStep(2);
-                }}
-                className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+                onClick={handleCancelBooking}
+                disabled={cancelling}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
-                Proceed to Payment
+                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
               </button>
             </div>
           </div>
