@@ -22,6 +22,20 @@ import Badge from "../ui/Badge";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 
+// Route mapping for navigation
+const routeMapping = {
+  "Mahalaxmi Temple": "101",
+  "Rankala Lake": "101",
+  "New Palace": "102",
+  "Shivaji University": "104",
+  "Jyotiba Temple": "106",
+  "Panhala Fort": "107",
+  "DYP City Mall": "102",
+  "Khasbag Maidan": "103",
+  "CPR Hospital": "103",
+  "Central Bus Stand": "101",
+};
+
 const HomePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -39,34 +53,60 @@ const HomePage = () => {
       route: "101",
       stops: "5 stops",
       fare: "₹15",
+      description: "Famous ancient temple dedicated to Goddess Mahalakshmi",
     },
     {
       id: 2,
       name: "Rankala Lake",
       image:
         "https://hblimg.mmtcdn.com/content/hubble/img/kohlapur/mmt/activities/m_Rankala%20Lake-1_l_424_640.jpg?im=Resize=(412,347.56)",
-      route: "101, 104",
+      route: "101",
       stops: "4 stops",
       fare: "₹12",
+      description: "Beautiful scenic lake with walking track",
     },
     {
       id: 3,
       name: "New Palace",
       image:
         "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQe2vopepzNjbQ8Cp487vnPwdxEBkH-ilfvWQ&s",
-      route: "105",
+      route: "102",
       stops: "3 stops",
       fare: "₹10",
+      description: "Historical palace with museum",
     },
     {
       id: 4,
       name: "Shivaji University",
       image:
         "https://idealcareer.in/wp-content/uploads/2020/12/56884_app-image-shivaji1-2.jpg.webp",
-      route: "103",
+      route: "104",
       stops: "6 stops",
       fare: "₹18",
+      description: "Premier educational institution",
     },
+  ];
+
+  // Additional destinations for better variety
+  const moreDestinations = [
+ {
+  id: 5,
+  name: "Jyotiba Temple",
+  image: "/images/jyotiba-mandir.jpg",
+  route: "106",
+  stops: "8 stops",
+  fare: "₹60",
+  description: "Sacred hill temple near Kolhapur",
+},
+{
+  id: 6,
+  name: "Panhala Fort",
+  image: "/images/panala-port.jpg", // FIXED spelling
+  route: "107",
+  stops: "7 stops",
+  fare: "₹50",
+  description: "Historic fort with panoramic views",
+}
   ];
 
   // Why choose us features
@@ -141,6 +181,17 @@ const HomePage = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${searchQuery}`);
     }
+  };
+
+  // Function to handle destination click and navigate to booking
+  const handleDestinationClick = (destination) => {
+    // Navigate to book ticket with route number
+    navigate(`/book-ticket/${destination.route}`);
+  };
+
+  // Function to handle route click
+  const handleRouteClick = (routeId) => {
+    navigate(`/book-ticket/${routeId}`);
   };
 
   const quickActions = [
@@ -224,7 +275,7 @@ const HomePage = () => {
               <div className="flex gap-2 bg-white rounded-lg p-1 shadow-2xl">
                 <input
                   type="text"
-                  placeholder="Where would you like to go today?"
+                  placeholder="Where would you like to go today? (e.g., Mahalaxmi Temple, Rankala Lake)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1 px-4 py-3 text-gray-900 rounded-lg focus:outline-none"
@@ -286,9 +337,14 @@ const HomePage = () => {
         {/* Featured Destinations */}
         <div className="mb-12">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Popular Destinations
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Popular Destinations
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Click on any destination to book your ticket instantly
+              </p>
+            </div>
             <Button variant="ghost" onClick={() => navigate("/search")}>
               View All <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
@@ -297,18 +353,26 @@ const HomePage = () => {
             {featuredDestinations.map((dest) => (
               <Card
                 key={dest.id}
-                className="overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                onClick={() => navigate(`/search?q=${dest.name}`)}
+                className="overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group"
+                onClick={() => handleDestinationClick(dest)}
               >
-                <div className="h-48 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                   <img
                     src={dest.image}
                     alt={dest.name}
-                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
+                  <div className="absolute top-2 right-2">
+                    <Badge variant="success" className="bg-green-600">
+                      Route {dest.route}
+                    </Badge>
+                  </div>
                 </div>
                 <Card.Body className="p-4">
                   <h3 className="font-semibold text-lg mb-1">{dest.name}</h3>
+                  <p className="text-xs text-gray-500 mb-2 line-clamp-1">
+                    {dest.description}
+                  </p>
                   <div className="flex items-center text-sm text-gray-600 mb-2">
                     <Bus className="h-3 w-3 mr-1" />
                     <span>Route {dest.route}</span>
@@ -317,12 +381,66 @@ const HomePage = () => {
                     <span>{dest.stops}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <Badge variant="success">{dest.fare}</Badge>
-                    <Button size="sm" variant="ghost">
-                      Book Now
+                    <Badge variant="success" className="bg-blue-100 text-blue-700">
+                      {dest.fare}
+                    </Badge>
+                    <Button size="sm" variant="ghost" className="text-blue-600">
+                      Book Now →
                     </Button>
                   </div>
                 </Card.Body>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* More Destinations Section */}
+        <div className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Explore More Places
+            </h2>
+            <Button variant="ghost" onClick={() => navigate("/destinations")}>
+              View All <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {moreDestinations.map((dest) => (
+              <Card
+                key={dest.id}
+                className="overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group"
+                onClick={() => handleDestinationClick(dest)}
+              >
+                <div className="flex h-40">
+                  <div className="w-1/3 overflow-hidden">
+                    <img
+                      src={dest.image}
+                      alt={dest.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="w-2/3 p-4">
+                    <h3 className="font-semibold text-lg mb-1">{dest.name}</h3>
+                    <p className="text-xs text-gray-500 mb-2">
+                      {dest.description}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-600 mb-2">
+                      <Bus className="h-3 w-3 mr-1" />
+                      <span>Route {dest.route}</span>
+                      <span className="mx-2">•</span>
+                      <MapPin className="h-3 w-3 mr-1" />
+                      <span>{dest.stops}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <Badge variant="success" className="bg-blue-100 text-blue-700">
+                        {dest.fare}
+                      </Badge>
+                      <Button size="sm" variant="ghost" className="text-blue-600">
+                        Book Now →
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
@@ -335,38 +453,83 @@ const HomePage = () => {
               <Card.Header>
                 <h2 className="text-xl font-semibold flex items-center">
                   <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
-                  Popular Routes
+                  Popular Bus Routes
                 </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Click on any route to book your ticket
+                </p>
               </Card.Header>
               <Card.Body>
                 <div className="space-y-4">
-                  {popularRoutes.map((route) => (
-                    <div
-                      key={route._id}
-                      onClick={() => navigate(`/book-ticket/${route._id}`)}
-                      className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-all hover:shadow-md"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">
-                            Route {route.routeNumber}
-                          </h3>
-                          <p className="text-sm text-gray-600">{route.name}</p>
+                  {popularRoutes.length > 0 ? (
+                    popularRoutes.map((route) => (
+                      <div
+                        key={route._id}
+                        onClick={() => handleRouteClick(route.routeNumber)}
+                        className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-all hover:shadow-md"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold">
+                              Route {route.routeNumber}
+                            </h3>
+                            <p className="text-sm text-gray-600">{route.name}</p>
+                          </div>
+                          <span className="text-lg font-bold text-blue-600">
+                            ₹{route.fare}
+                          </span>
                         </div>
-                        <span className="text-lg font-bold text-blue-600">
-                          ₹{route.fare}
-                        </span>
+                        <div className="mt-2 flex items-center text-sm text-gray-500">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          {route.source} → {route.destination}
+                        </div>
+                        <div className="mt-1 flex items-center text-sm text-gray-500">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {route.duration} mins • {route.distance} km
+                        </div>
                       </div>
-                      <div className="mt-2 flex items-center text-sm text-gray-500">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {route.source} → {route.destination}
-                      </div>
-                      <div className="mt-1 flex items-center text-sm text-gray-500">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {route.duration} mins • {route.distance} km
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    // Fallback routes if API fails
+                    <>
+                      {["101", "102", "103", "104"].map((routeNum) => (
+                        <div
+                          key={routeNum}
+                          onClick={() => handleRouteClick(routeNum)}
+                          className="p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-all hover:shadow-md"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold">Route {routeNum}</h3>
+                              <p className="text-sm text-gray-600">
+                                {routeNum === "101" && "CBS → Rankala Lake"}
+                                {routeNum === "102" && "CBS → DYP City Mall"}
+                                {routeNum === "103" && "Rankala Lake → Khasbag"}
+                                {routeNum === "104" && "Shivaji University → CBS"}
+                              </p>
+                            </div>
+                            <span className="text-lg font-bold text-blue-600">
+                              ₹{routeNum === "101" ? "15" : routeNum === "102" ? "20" : "15"}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-center text-sm text-gray-500">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {routeNum === "101" && "Central Bus Stand → Rankala Lake"}
+                            {routeNum === "102" && "Central Bus Stand → DYP City Mall"}
+                            {routeNum === "103" && "Rankala Lake → Khasbag Maidan"}
+                            {routeNum === "104" && "Shivaji University → Central Bus Stand"}
+                          </div>
+                          <div className="mt-1 flex items-center text-sm text-gray-500">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {routeNum === "101" && "25 mins • 8 km"}
+                            {routeNum === "102" && "30 mins • 10 km"}
+                            {routeNum === "103" && "20 mins • 6 km"}
+                            {routeNum === "104" && "35 mins • 12 km"}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               </Card.Body>
             </Card>
@@ -494,7 +657,6 @@ const HomePage = () => {
             </p>
 
             <div className="flex justify-center space-x-4">
-              {/* BOOK NOW – SAME AS VIEW SCHEDULE */}
               <Button
                 variant="outline"
                 size="lg"
@@ -505,7 +667,6 @@ const HomePage = () => {
                 Book Now
               </Button>
 
-              {/* VIEW SCHEDULE */}
               <Button
                 variant="outline"
                 size="lg"
