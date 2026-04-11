@@ -12,31 +12,31 @@ const About = () => {
         <Card.Body className="p-6">
           <div className="space-y-6">
             <div className="text-center">
-              <img 
-                src="https://via.placeholder.com/800x400" 
+              <img
+                src="/images/kop-city.webp"
                 alt="Kolhapur City"
-                className="w-full h-64 object-cover rounded-lg mb-4"
+                className="w-64 h-32 object-cover rounded-lg mx-auto mb-4"
               />
             </div>
 
             <div className="prose max-w-none">
               <p className="text-lg text-gray-700 leading-relaxed">
-                Kolhapur City Bus Transport System is a premier public transportation service 
-                serving the historic city of Kolhapur and its surrounding areas. Established 
-                in 1965, we have been committed to providing safe, reliable, and affordable 
+                Kolhapur City Bus Transport System is a premier public transportation service
+                serving the historic city of Kolhapur and its surrounding areas. Established
+                in 1965, we have been committed to providing safe, reliable, and affordable
                 transportation to millions of passengers.
               </p>
 
               <h2 className="text-2xl font-semibold mt-6 mb-3">Our Mission</h2>
               <p className="text-gray-700">
-                To provide efficient, eco-friendly, and accessible public transportation that 
-                connects communities, supports economic growth, and enhances the quality of 
+                To provide efficient, eco-friendly, and accessible public transportation that
+                connects communities, supports economic growth, and enhances the quality of
                 life in Kolhapur city.
               </p>
 
               <h2 className="text-2xl font-semibold mt-6 mb-3">Our Vision</h2>
               <p className="text-gray-700">
-                To be the model of excellence in urban public transportation, setting 
+                To be the model of excellence in urban public transportation, setting
                 standards for reliability, sustainability, and customer satisfaction.
               </p>
             </div>
