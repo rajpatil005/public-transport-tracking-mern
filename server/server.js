@@ -17,8 +17,6 @@ import { startTrackingEngine } from "./utils/trackingEngine.js";
 dotenv.config();
 connectDB();
 
-/* ================= APP INIT ================= */
-
 const app = express();
 
 app.use(express.json());
@@ -26,32 +24,30 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true,
-  }),
+  })
 );
 
-/* ================= ROUTES ================= */
+app.get("/", (req, res) => {
+  res.send("API Running 🚀");
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/buses", busRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/booking", bookingRoutes);
 
-/* ================= HTTP + SOCKET SERVER ================= */
-
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
 
 app.set("io", io);
-
-/* ================= SOCKET CONNECTION ================= */
 
 io.on("connection", (socket) => {
   console.log("✅ Socket Connected:", socket.id);
@@ -66,15 +62,9 @@ io.on("connection", (socket) => {
   });
 });
 
-/* ================= START SMART TRACKING ENGINE ================= */
-
 startTrackingEngine(io);
 
-/* ================= ERROR HANDLER ================= */
-
 app.use(errorHandler);
-
-/* ================= SERVER START ================= */
 
 const PORT = process.env.PORT || 5000;
 

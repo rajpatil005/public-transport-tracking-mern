@@ -1,15 +1,14 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
-// Generate JWT Token
+/* 🔐 Generate Token */
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 };
 
-// @desc    Register user
-// @route   POST /api/auth/register
+/* ================= REGISTER ================= */
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -42,6 +41,7 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Register Error:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -49,13 +49,13 @@ export const register = async (req, res) => {
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
+/* ================= LOGIN ================= */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    // 🔥 IMPORTANT FIX
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(401).json({
@@ -64,17 +64,19 @@ export const login = async (req, res) => {
       });
     }
 
-    const isPasswordValid = await user.comparePassword(password);
+    const isMatch = await user.comparePassword(password);
 
-    if (!isPasswordValid) {
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
 
-    user.lastLogin = Date.now();
-    await user.save();
+    // 🔥 SAFE UPDATE (NO CRASH)
+    await User.findByIdAndUpdate(user._id, {
+      lastLogin: Date.now(),
+    });
 
     const token = generateToken(user._id, user.role);
 
@@ -89,6 +91,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Login Error:", error); // 🔥 debug
     res.status(500).json({
       success: false,
       message: error.message,
@@ -96,17 +99,17 @@ export const login = async (req, res) => {
   }
 };
 
-// @desc    Get current user
-// @route   GET /api/auth/me
+/* ================= GET ME ================= */
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user.id);
 
     res.json({
       success: true,
       data: user,
     });
   } catch (error) {
+    console.error("GetMe Error:", error);
     res.status(500).json({
       success: false,
       message: error.message,

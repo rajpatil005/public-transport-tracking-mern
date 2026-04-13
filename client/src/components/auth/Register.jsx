@@ -131,7 +131,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -160,16 +160,16 @@ const Register = () => {
       {/* Feature Message Toast */}
       {showFeatureMessage && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-slideDown">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2">
             <Bus size={18} className="text-yellow-300" />
             <span>Please register to access {showFeatureMessage}</span>
           </div>
         </div>
       )}
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center max-w-7xl mx-auto px-4">
-        {/* Left Side - Brand Section */}
-        <div className="w-1/2 text-white pr-16 animate-fadeInLeft">
+      <div className="relative z-10 flex min-h-screen items-center justify-center max-w-7xl mx-auto px-4 py-8">
+        {/* Left Side - Brand Section - Always Visible */}
+        <div className="w-full lg:w-1/2 text-white pr-0 lg:pr-16 animate-fadeInLeft">
           <div className="mb-8">
             <div 
               className="relative inline-block group cursor-pointer mb-6"
@@ -190,74 +190,74 @@ const Register = () => {
               )}
             </div>
             
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
               Kolhapur Bus Tracking
             </h1>
-            <p className="text-xl text-purple-200 mb-6">
+            <p className="text-lg lg:text-xl text-purple-200 mb-6">
               Smart real-time public transport tracking system.
             </p>
           </div>
 
           {/* Features Grid - Clickable */}
-          <div className="grid grid-cols-2 gap-4 mt-8">
+          <div className="grid grid-cols-2 gap-4 mb-8">
             <div 
               onClick={() => handleFeatureClick("Live Bus Tracking")}
               className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
             >
               <MapPin className="text-yellow-400" size={20} />
-              <span className="text-sm">Live Bus Tracking</span>
+              <span className="text-sm text-white">Live Bus Tracking</span>
             </div>
             <div 
               onClick={() => handleFeatureClick("Real-time Updates")}
               className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
             >
               <Clock className="text-green-400" size={20} />
-              <span className="text-sm">Real-time Updates</span>
+              <span className="text-sm text-white">Real-time Updates</span>
             </div>
             <div 
               onClick={() => handleFeatureClick("Easy Booking")}
               className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
             >
               <User className="text-blue-400" size={20} />
-              <span className="text-sm">Easy Booking</span>
+              <span className="text-sm text-white">Easy Booking</span>
             </div>
             <div 
               onClick={() => handleFeatureClick("Smart Routes")}
               className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
             >
               <Bus className="text-purple-400" size={20} />
-              <span className="text-sm">Smart Routes</span>
+              <span className="text-sm text-white">Smart Routes</span>
             </div>
           </div>
 
           {/* Stats - Clickable */}
-          <div className="flex gap-6 mt-8 pt-6 border-t border-white/20">
+          <div className="flex flex-wrap gap-6 pt-6 border-t border-white/20">
             <div 
               onClick={() => handleFeatureClick("Daily Routes")}
               className="cursor-pointer hover:scale-105 transition-transform duration-300"
             >
-              <p className="text-2xl font-bold">50+</p>
+              <p className="text-xl lg:text-2xl font-bold text-white">50+</p>
               <p className="text-xs text-purple-200">Daily Routes</p>
             </div>
             <div 
               onClick={() => handleFeatureClick("Active Buses")}
               className="cursor-pointer hover:scale-105 transition-transform duration-300"
             >
-              <p className="text-2xl font-bold">200+</p>
+              <p className="text-xl lg:text-2xl font-bold text-white">200+</p>
               <p className="text-xs text-purple-200">Active Buses</p>
             </div>
             <div 
               onClick={() => handleFeatureClick("Happy Riders")}
               className="cursor-pointer hover:scale-105 transition-transform duration-300"
             >
-              <p className="text-2xl font-bold">10K+</p>
+              <p className="text-xl lg:text-2xl font-bold text-white">10K+</p>
               <p className="text-xs text-purple-200">Happy Riders</p>
             </div>
           </div>
         </div>
 
         {/* Right Side - Register Form */}
-        <div className="w-1/2 flex justify-center animate-fadeInRight">
+        <div className="w-full lg:w-1/2 flex justify-center animate-fadeInRight mt-8 lg:mt-0">
           <div className="relative w-full max-w-md">
             {/* Decorative Elements */}
             <div className="absolute -top-5 -right-5 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 blur-xl"></div>

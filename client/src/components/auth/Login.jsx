@@ -76,7 +76,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
@@ -105,30 +105,35 @@ const Login = () => {
       {/* Feature Message Toast */}
       {showFeatureMessage && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-slideDown">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full">
               <Bus size={16} className="text-yellow-300" />
             </div>
             <span className="font-medium">Please login to access {showFeatureMessage}</span>
-           
           </div>
         </div>
       )}
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center max-w-7xl mx-auto px-4">
-        {/* Left Side - Brand Section */}
-        <div className="w-1/2 text-white pr-16 animate-fadeInLeft">
+      <div className="relative z-10 flex min-h-screen items-center justify-center max-w-7xl mx-auto px-4 py-8">
+        {/* Left Side - Brand Section - Always Visible */}
+        <div className="w-full lg:w-1/2 text-white pr-0 lg:pr-16 animate-fadeInLeft">
           <div className="mb-8">
             <div
               className="relative inline-block group cursor-pointer mb-6"
               onMouseEnter={() => setIsBusHovered(true)}
               onMouseLeave={() => setIsBusHovered(false)}
             >
-              <div className={`absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-xl transition-all duration-500 ${isBusHovered ? 'scale-150 opacity-70' : 'scale-100 opacity-0'}`}></div>
-              <div className={`relative p-5 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl backdrop-blur-sm border border-white/30 transition-all duration-500 transform ${isBusHovered ? 'scale-110 rotate-12 shadow-2xl' : 'scale-100 rotate-0'}`}>
+              <div className={`absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-xl transition-all duration-500 ${
+                isBusHovered ? 'scale-150 opacity-70' : 'scale-100 opacity-0'
+              }`}></div>
+              <div className={`relative p-5 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl backdrop-blur-sm border border-white/30 transition-all duration-500 transform ${
+                isBusHovered ? 'scale-110 rotate-12 shadow-2xl' : 'scale-100 rotate-0'
+              }`}>
                 <Bus
                   size={48}
-                  className={`transition-all duration-500 ${isBusHovered ? 'text-yellow-300 scale-110' : 'text-white'}`}
+                  className={`transition-all duration-500 ${
+                    isBusHovered ? 'text-yellow-300 scale-110' : 'text-white'
+                  }`}
                 />
               </div>
               {isBusHovered && (
@@ -138,74 +143,54 @@ const Login = () => {
               )}
             </div>
 
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
               Kolhapur Bus Tracking
             </h1>
-            <p className="text-xl text-purple-200 mb-6">
+            <p className="text-lg lg:text-xl text-purple-200 mb-6">
               Smart real-time public transport tracking system.
             </p>
           </div>
 
           {/* Features Grid - Clickable */}
-          <div className="grid grid-cols-2 gap-4 mt-8">
-            <div
-              onClick={() => handleFeatureClick("Live Bus Tracking")}
-              className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
-            >
-              <MapPin className="text-yellow-400" size={20} />
-              <span className="text-sm">Live Bus Tracking</span>
-            </div>
-            <div
-              onClick={() => handleFeatureClick("Real-time Updates")}
-              className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
-            >
-              <Clock className="text-green-400" size={20} />
-              <span className="text-sm">Real-time Updates</span>
-            </div>
-            <div
-              onClick={() => handleFeatureClick("Easy Booking")}
-              className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
-            >
-              <User className="text-blue-400" size={20} />
-              <span className="text-sm">Easy Booking</span>
-            </div>
-            <div
-              onClick={() => handleFeatureClick("Smart Routes")}
-              className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
-            >
-              <Bus className="text-purple-400" size={20} />
-              <span className="text-sm">Smart Routes</span>
-            </div>
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            {[
+              { icon: MapPin, name: "Live Bus Tracking", color: "text-yellow-400" },
+              { icon: Clock, name: "Real-time Updates", color: "text-green-400" },
+              { icon: User, name: "Easy Booking", color: "text-blue-400" },
+              { icon: Bus, name: "Smart Routes", color: "text-purple-400" },
+            ].map((feature, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleFeatureClick(feature.name)}
+                className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 cursor-pointer"
+              >
+                <feature.icon className={feature.color} size={20} />
+                <span className="text-sm text-white">{feature.name}</span>
+              </div>
+            ))}
           </div>
 
           {/* Stats - Clickable */}
-          <div className="flex gap-6 mt-8 pt-6 border-t border-white/20">
-            <div
-              onClick={() => handleFeatureClick("Daily Routes")}
-              className="cursor-pointer hover:scale-105 transition-transform duration-300"
-            >
-              <p className="text-2xl font-bold">50+</p>
-              <p className="text-xs text-purple-200">Daily Routes</p>
-            </div>
-            <div
-              onClick={() => handleFeatureClick("Active Buses")}
-              className="cursor-pointer hover:scale-105 transition-transform duration-300"
-            >
-              <p className="text-2xl font-bold">200+</p>
-              <p className="text-xs text-purple-200">Active Buses</p>
-            </div>
-            <div
-              onClick={() => handleFeatureClick("Happy Riders")}
-              className="cursor-pointer hover:scale-105 transition-transform duration-300"
-            >
-              <p className="text-2xl font-bold">10K+</p>
-              <p className="text-xs text-purple-200">Happy Riders</p>
-            </div>
+          <div className="flex flex-wrap gap-6 pt-6 border-t border-white/20">
+            {[
+              { value: "50+", label: "Daily Routes", feature: "Daily Routes" },
+              { value: "200+", label: "Active Buses", feature: "Active Buses" },
+              { value: "10K+", label: "Happy Riders", feature: "Happy Riders" },
+            ].map((stat, idx) => (
+              <div
+                key={idx}
+                onClick={() => handleFeatureClick(stat.feature)}
+                className="cursor-pointer hover:scale-105 transition-transform duration-300"
+              >
+                <p className="text-xl lg:text-2xl font-bold text-white">{stat.value}</p>
+                <p className="text-xs text-purple-200">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="w-1/2 flex justify-center animate-fadeInRight">
+        <div className="w-full lg:w-1/2 flex justify-center animate-fadeInRight mt-8 lg:mt-0">
           <div className="relative w-full max-w-md">
             {/* Decorative Elements */}
             <div className="absolute -top-5 -right-5 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 blur-xl"></div>
@@ -216,8 +201,12 @@ const Login = () => {
 
               <div className="relative z-10">
                 <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2">Welcome Back!</h2>
-                  <p className="text-purple-200 text-sm">Sign in to continue your journey</p>
+                  <h2 className="text-3xl font-bold text-white mb-2">
+                    Welcome Back!
+                  </h2>
+                  <p className="text-sm text-purple-200">
+                    Sign in to continue your journey
+                  </p>
                 </div>
 
                 {error && (
@@ -233,7 +222,7 @@ const Login = () => {
                       Email Address
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300 transition-all duration-300 group-hover:text-purple-500" size={18} />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300" size={18} />
                       <input
                         ref={emailRef}
                         type="text"
@@ -350,7 +339,9 @@ const Login = () => {
                     <div className="w-full border-t border-white/20"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-transparent text-purple-300">New to Kolhapur Bus Tracking?</span>
+                    <span className="px-2 bg-transparent text-purple-300">
+                      New to Kolhapur Bus Tracking?
+                    </span>
                   </div>
                 </div>
 

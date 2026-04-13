@@ -1,39 +1,39 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
+
 import Route from "./models/Route.js";
 import Bus from "./models/Bus.js";
 import User from "./models/User.js";
 
 import { kolhapurRoutes, kolhapurBuses } from "./data/kolhapurData.js";
 
-/* ================= DATABASE CONNECT ================= */
+dotenv.config();
 
-mongoose.connect("mongodb://localhost:27017/kolhapurDB");
+
+mongoose.connect(process.env.MONGO_URI);
+
+/* ================= ON CONNECT ================= */
 
 mongoose.connection.once("open", async () => {
   try {
-    console.log("MongoDB Connected");
+    console.log("✅ MongoDB Atlas Connected");
 
     /* ================= CLEAR OLD DATA ================= */
 
     await Route.deleteMany({});
     await Bus.deleteMany({});
-
-    // Remove only admin users
     await User.deleteMany({ role: "admin" });
 
-    /* ================= SEED ADMIN USER ================= */
-
-    // ❗ IMPORTANT — Do NOT hash password here.
-    // Schema pre-save middleware will hash automatically.
+    /* ================= ADMIN USER ================= */
 
     await User.create({
       name: "Admin",
       email: "admin@bus.com",
-      password: "admin123",
+      password: "admin123", // 🔐 auto hash होईल
       role: "admin",
     });
 
-    console.log("✅ Admin seeded");
+    console.log("✅ Admin Created");
 
     /* ================= FORMAT ROUTES ================= */
 
@@ -53,6 +53,8 @@ mongoose.connection.once("open", async () => {
     }));
 
     const routes = await Route.insertMany(formattedRoutes);
+
+    console.log(`✅ ${routes.length} Routes Inserted`);
 
     /* ================= ROUTE MAP ================= */
 
@@ -85,13 +87,13 @@ mongoose.connection.once("open", async () => {
 
     await Bus.insertMany(buses);
 
-    console.log("✅ Data Inserted Successfully !!");
+    console.log(`✅ ${buses.length} Buses Inserted`);
+
+    console.log("🎉 ALL DATA SEEDED SUCCESSFULLY IN ATLAS 🚀");
 
     process.exit(0);
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.error("❌ SEED ERROR:", error);
     process.exit(1);
   }
 });
-// http://localhost:5000/api/auth/login
-// http://localhost:5000/api/routes/generate-path?routeId=69a06a97b9fada3d2f3c4b04

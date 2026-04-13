@@ -275,7 +275,7 @@ const HomePage = () => {
               <div className="flex gap-2 bg-white rounded-lg p-1 shadow-2xl">
                 <input
                   type="text"
-                  placeholder="Where would you like to go today? (e.g., Mahalaxmi Temple, Rankala Lake)"
+                  placeholder="Search for routes for your destination..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1 px-4 py-3 text-gray-900 rounded-lg focus:outline-none"
