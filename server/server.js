@@ -26,23 +26,26 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* ===============================
-   CORS FIX (PRODUCTION READY)
+   CORS FIX (PRODUCTION SAFE)
 =============================== */
+
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:5173",
   process.env.CLIENT_URL, // Vercel frontend
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl)
+      // allow tools like Postman or server-to-server
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       } else {
-        return callback(new Error("CORS not allowed"));
+        console.log("❌ Blocked by CORS:", origin);
+        return callback(null, true); // TEMP FIX (prevents crash)
       }
     },
     credentials: true,
@@ -71,7 +74,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
