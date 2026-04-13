@@ -159,17 +159,17 @@ const Register = () => {
 
       {/* Feature Message Toast */}
       {showFeatureMessage && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-slideDown">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2">
-            <Bus size={18} className="text-yellow-300" />
-            <span>Please register to access {showFeatureMessage}</span>
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-slideDown w-[90%] max-w-md">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2">
+            <Bus size={16} className="text-yellow-300 flex-shrink-0" />
+            <span className="text-sm">Please register to access {showFeatureMessage}</span>
           </div>
         </div>
       )}
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center max-w-7xl mx-auto px-4 py-8">
-        {/* Left Side - Brand Section - Always Visible */}
-        <div className="w-full lg:w-1/2 text-white pr-0 lg:pr-16 animate-fadeInLeft">
+      <div className="relative z-10 flex flex-col lg:flex-row min-h-screen items-center justify-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* Left Side - Brand Section - Hidden on Mobile, Visible on Desktop */}
+        <div className="hidden lg:block w-full lg:w-1/2 text-white pr-0 lg:pr-16 animate-fadeInLeft">
           <div className="mb-8">
             <div 
               className="relative inline-block group cursor-pointer mb-6"
@@ -256,20 +256,33 @@ const Register = () => {
           </div>
         </div>
 
-        {/* Right Side - Register Form */}
-        <div className="w-full lg:w-1/2 flex justify-center animate-fadeInRight mt-8 lg:mt-0">
-          <div className="relative w-full max-w-md">
+        {/* Right Side - Register Form - Full width on mobile, half on desktop */}
+        <div className="w-full lg:w-1/2 flex justify-center animate-fadeInRight">
+          <div className="relative w-full max-w-md px-2 sm:px-0">
+            {/* Mobile Header - Only visible on mobile */}
+            <div className="lg:hidden text-center mb-6">
+              <div className="inline-block p-3 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl backdrop-blur-sm border border-white/30 mb-3">
+                <Bus size={32} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">
+                Kolhapur Bus Tracking
+              </h1>
+              <p className="text-sm text-purple-200">
+                Smart real-time public transport tracking system.
+              </p>
+            </div>
+
             {/* Decorative Elements */}
-            <div className="absolute -top-5 -right-5 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 blur-xl"></div>
-            <div className="absolute -bottom-5 -left-5 w-20 h-20 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-20 blur-xl"></div>
+            <div className="absolute -top-5 -right-5 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 blur-xl"></div>
+            <div className="absolute -bottom-5 -left-5 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-20 blur-xl"></div>
             
-            <div className="relative p-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/30 shadow-2xl transition-all duration-500 hover:shadow-3xl">
+            <div className="relative p-5 sm:p-6 md:p-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/30 shadow-2xl transition-all duration-500 hover:shadow-3xl">
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/5 to-transparent rounded-2xl pointer-events-none"></div>
               
               <div className="relative z-10">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
-                  <p className="text-purple-200 text-sm">Join us and start tracking buses in real-time</p>
+                <div className="text-center mb-6 sm:mb-8">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Create Account</h2>
+                  <p className="text-purple-200 text-xs sm:text-sm">Join us and start tracking buses in real-time</p>
                 </div>
 
                 {error && (
@@ -278,7 +291,7 @@ const Register = () => {
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                <form onSubmit={handleSubmit} noValidate className="space-y-4 sm:space-y-5">
                   {/* FULL NAME */}
                   <div className="transform transition-all duration-300 hover:translate-x-1">
                     <label className="block text-sm font-medium text-purple-200 mb-2">
@@ -311,12 +324,12 @@ const Register = () => {
                             }));
                           }
                         }}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        className="w-full pl-11 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-sm sm:text-base"
                         placeholder="Enter your full name"
                       />
                     </div>
                     {validationErrors.name && (
-                      <p className="text-red-300 text-sm mt-1 animate-fadeIn">
+                      <p className="text-red-300 text-xs sm:text-sm mt-1 animate-fadeIn">
                         {validationErrors.name}
                       </p>
                     )}
@@ -352,12 +365,12 @@ const Register = () => {
                             email: emailError,
                           }));
                         }}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        className="w-full pl-11 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-sm sm:text-base"
                         placeholder="Enter your email"
                       />
                     </div>
                     {validationErrors.email && (
-                      <p className="text-red-300 text-sm mt-1 animate-fadeIn">
+                      <p className="text-red-300 text-xs sm:text-sm mt-1 animate-fadeIn">
                         {validationErrors.email}
                       </p>
                     )}
@@ -405,7 +418,7 @@ const Register = () => {
                             }));
                           }
                         }}
-                        className="w-full pl-12 pr-12 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        className="w-full pl-11 sm:pl-12 pr-11 sm:pr-12 py-2.5 sm:py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-sm sm:text-base"
                         placeholder="Create a password"
                       />
                       <button
@@ -413,7 +426,7 @@ const Register = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-300 hover:text-purple-100"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? <EyeOff size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />}
                       </button>
                     </div>
                     
@@ -434,7 +447,7 @@ const Register = () => {
                     )}
                     
                     {validationErrors.password && (
-                      <p className="text-red-300 text-sm mt-1 animate-fadeIn">
+                      <p className="text-red-300 text-xs sm:text-sm mt-1 animate-fadeIn">
                         {validationErrors.password}
                       </p>
                     )}
@@ -477,7 +490,7 @@ const Register = () => {
                             }));
                           }
                         }}
-                        className="w-full pl-12 pr-12 py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                        className="w-full pl-11 sm:pl-12 pr-11 sm:pr-12 py-2.5 sm:py-3 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-sm sm:text-base"
                         placeholder="Confirm your password"
                       />
                       <button
@@ -485,11 +498,11 @@ const Register = () => {
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-300 hover:text-purple-100"
                       >
-                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showConfirmPassword ? <EyeOff size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />}
                       </button>
                     </div>
                     {validationErrors.confirmPassword && (
-                      <p className="text-red-300 text-sm mt-1 animate-fadeIn">
+                      <p className="text-red-300 text-xs sm:text-sm mt-1 animate-fadeIn">
                         {validationErrors.confirmPassword}
                       </p>
                     )}
@@ -498,37 +511,37 @@ const Register = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="relative group w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-700 overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-70 mt-2"
+                    className="relative group w-full py-2.5 sm:py-3 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-700 overflow-hidden transition-all duration-300 hover:shadow-xl hover:scale-[1.02] active:scale-95 disabled:opacity-70 mt-2 text-sm sm:text-base"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <span className="relative flex items-center justify-center gap-2">
                       {loading ? (
                         <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                           Creating Account...
                         </>
                       ) : (
                         <>
                           Register
-                          <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300" />
+                          <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] group-hover:translate-x-1 transition-transform duration-300" />
                         </>
                       )}
                     </span>
                   </button>
                 </form>
 
-                <div className="relative my-6">
+                <div className="relative my-5 sm:my-6">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-white/20"></div>
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-transparent text-purple-300">Already have an account?</span>
+                  <div className="relative flex justify-center text-center">
+                    <span className="px-2 bg-transparent text-purple-300 text-xs sm:text-sm">Already have an account?</span>
                   </div>
                 </div>
 
                 <Link
                   to="/login"
-                  className="block w-full text-center py-3 rounded-xl font-medium text-purple-200 border border-purple-300/50 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                  className="block w-full text-center py-2.5 sm:py-3 rounded-xl font-medium text-purple-200 border border-purple-300/50 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] active:scale-95 text-sm sm:text-base"
                 >
                   Sign In
                 </Link>

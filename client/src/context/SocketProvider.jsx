@@ -16,7 +16,7 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const socket = io("http://127.0.0.1:5000", {
+    const socket = io("https://public-transport-tracking-mern-1.onrender.com", {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 10,
