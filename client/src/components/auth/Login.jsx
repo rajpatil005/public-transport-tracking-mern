@@ -1,3 +1,4 @@
+// client/src/components/auth/Login.jsx
 import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Bus, MapPin, Clock, User, ArrowRight } from "lucide-react";
@@ -14,7 +15,6 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Refs for keyboard navigation
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
 
@@ -62,7 +62,13 @@ const Login = () => {
       await login(formData.email, formData.password);
       navigate("/home");
     } catch (err) {
-      setError(err.message || "Login failed.");
+      console.error("Login error:", err);
+      // Show more detailed error message
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error ||
+                          err.message || 
+                          "Login failed. Please check your credentials.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -84,24 +90,6 @@ const Login = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${3 + Math.random() * 4}s`,
-            }}
-          >
-            <div className="w-1 h-1 bg-white/30 rounded-full"></div>
-          </div>
-        ))}
-      </div>
-
       {/* Feature Message Toast */}
       {showFeatureMessage && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-slideDown w-[90%] max-w-md">
@@ -115,8 +103,8 @@ const Login = () => {
       )}
 
       <div className="relative z-10 flex flex-col lg:flex-row min-h-screen items-center justify-center max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        {/* Left Side - Brand Section - Hidden on Mobile, Visible on Desktop */}
-        <div className="hidden lg:block w-full lg:w-1/2 text-white pr-0 lg:pr-16 animate-fadeInLeft">
+        {/* Left Side - Brand Section */}
+        <div className="hidden lg:block w-full lg:w-1/2 text-white pr-0 lg:pr-16">
           <div className="mb-8">
             <div
               className="relative inline-block group cursor-pointer mb-6"
@@ -151,7 +139,7 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Features Grid - Clickable */}
+          {/* Features Grid */}
           <div className="grid grid-cols-2 gap-4 mb-8">
             {[
               { icon: MapPin, name: "Live Bus Tracking", color: "text-yellow-400" },
@@ -170,7 +158,7 @@ const Login = () => {
             ))}
           </div>
 
-          {/* Stats - Clickable */}
+          {/* Stats */}
           <div className="flex flex-wrap gap-6 pt-6 border-t border-white/20">
             {[
               { value: "50+", label: "Daily Routes", feature: "Daily Routes" },
@@ -189,10 +177,10 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Right Side - Login Form - Full width on mobile, half on desktop */}
-        <div className="w-full lg:w-1/2 flex justify-center animate-fadeInRight">
+        {/* Right Side - Login Form */}
+        <div className="w-full lg:w-1/2 flex justify-center">
           <div className="relative w-full max-w-md px-2 sm:px-0">
-            {/* Mobile Header - Only visible on mobile */}
+            {/* Mobile Header */}
             <div className="lg:hidden text-center mb-6">
               <div className="inline-block p-3 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl backdrop-blur-sm border border-white/30 mb-3">
                 <Bus size={32} className="text-white" />
@@ -209,9 +197,9 @@ const Login = () => {
             <div className="absolute -top-5 -right-5 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 blur-xl"></div>
             <div className="absolute -bottom-5 -left-5 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-20 blur-xl"></div>
 
-            <div className="relative p-5 sm:p-6 md:p-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/30 shadow-2xl transition-all duration-500 hover:shadow-3xl">
+            <div className="relative p-5 sm:p-6 md:p-8 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/30 shadow-2xl">
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-white/5 to-transparent rounded-2xl pointer-events-none"></div>
-
+              
               <div className="relative z-10">
                 <div className="text-center mb-6 sm:mb-8">
                   <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
@@ -223,14 +211,14 @@ const Login = () => {
                 </div>
 
                 {error && (
-                  <div className="bg-red-500/20 backdrop-blur-sm border border-red-500/50 text-red-100 p-3 rounded-xl mb-4 text-sm animate-shake">
+                  <div className="bg-red-500/20 backdrop-blur-sm border border-red-500/50 text-red-100 p-3 rounded-xl mb-4 text-sm">
                     {error}
                   </div>
                 )}
 
                 <form onSubmit={handleSubmit} noValidate className="space-y-5 sm:space-y-6">
                   {/* EMAIL */}
-                  <div className="transform transition-all duration-300 hover:translate-x-1">
+                  <div>
                     <label className="block text-sm font-medium text-purple-200 mb-2">
                       Email Address
                     </label>
@@ -260,14 +248,14 @@ const Login = () => {
                       />
                     </div>
                     {validationErrors.email && (
-                      <p className="text-red-300 text-xs sm:text-sm mt-1 animate-fadeIn">
+                      <p className="text-red-300 text-xs sm:text-sm mt-1">
                         {validationErrors.email}
                       </p>
                     )}
                   </div>
 
                   {/* PASSWORD */}
-                  <div className="transform transition-all duration-300 hover:translate-x-1">
+                  <div>
                     <label className="block text-sm font-medium text-purple-200 mb-2">
                       Password
                     </label>
@@ -308,7 +296,7 @@ const Login = () => {
                       />
                     </div>
                     {validationErrors.password && (
-                      <p className="text-red-300 text-xs sm:text-sm mt-1 animate-fadeIn">
+                      <p className="text-red-300 text-xs sm:text-sm mt-1">
                         {validationErrors.password}
                       </p>
                     )}
@@ -340,7 +328,7 @@ const Login = () => {
                       ) : (
                         <>
                           Login
-                          <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] group-hover:translate-x-1 transition-transform duration-300" />
+                          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
                         </>
                       )}
                     </span>
@@ -370,44 +358,12 @@ const Login = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      {/* Add CSS animations */}
+      <style>{`
         @keyframes blob {
           0%, 100% { transform: translate(0, 0) scale(1); }
           33% { transform: translate(30px, -50px) scale(1.1); }
           66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        
-        @keyframes fadeInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes fadeInRight {
-          from {
-            opacity: 0;
-            transform: translateX(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
         }
         
         @keyframes slideDown {
@@ -431,26 +387,6 @@ const Login = () => {
         
         .animation-delay-4000 {
           animation-delay: 4s;
-        }
-        
-        .animate-fadeInLeft {
-          animation: fadeInLeft 0.8s ease-out;
-        }
-        
-        .animate-fadeInRight {
-          animation: fadeInRight 0.8s ease-out;
-        }
-        
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-        
-        .animate-fadeIn {
-          animation: fadeInLeft 0.3s ease-out;
         }
         
         .animate-slideDown {
