@@ -1,40 +1,28 @@
+// client/src/services/api.js
 import axios from "axios";
 
-// Use environment variable with fallback
-const API_URL = process.env.REACT_APP_API_URL || "https://public-transport-tracking-mern-1.onrender.com";
-
-console.log("API URL:", API_URL); // Debug log
+// IMPORTANT: No trailing slash, no /api at the end
+const API_URL = "https://public-transport-tracking-mern-1.onrender.com";
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Important for CORS
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  console.log("Request:", config.method.toUpperCase(), config.url); // Debug log
-  return config;
-});
-
-api.interceptors.response.use(
-  (response) => {
-    console.log("Response:", response.status, response.config.url); // Debug log
-    return response;
+// Add a request interceptor for debugging
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // This will show the complete URL being called
+    console.log("🌐 Full URL:", config.baseURL + config.url);
+    return config;
   },
   (error) => {
-    console.error("API Error:", error.response?.status, error.response?.data); // Debug log
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
-    }
     return Promise.reject(error);
   }
 );
