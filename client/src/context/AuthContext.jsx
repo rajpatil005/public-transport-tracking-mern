@@ -1,33 +1,38 @@
-// client/src/context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import api from "../services/api";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
 
+  /* ================= LOAD USER ================= */
   useEffect(() => {
     if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // REMOVED /api from the path - using just /auth/me
-      api.get('/auth/me')
-        .then(response => {
-          setUser(response.data.data || response.data.user);
+      api
+        .get("/auth/me", {   // ✅ FIXED
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((response) => {
+          const userData = response.data.data;
+          setUser(userData);
         })
         .catch(() => {
-          localStorage.removeItem('token');
+          localStorage.removeItem("token");
           setToken(null);
+          setUser(null);
         })
         .finally(() => setLoading(false));
     } else {
@@ -35,25 +40,30 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
+  /* ================= LOGIN ================= */
   const login = async (email, password) => {
     try {
-      // REMOVED /api from the path - using just /auth/login
-      const response = await api.post("/auth/login", {
+      const response = await api.post("/auth/login", {  // ✅ FIXED
         email,
         password,
       });
 
-      const token = response.data.token || response.data.data?.token;
-      const user = response.data.user || response.data.data?.user;
+      console.log("LOGIN RESPONSE:", response.data);
+
+      const data = response.data.data;
+
+      const token = data.token;
+      const user = data;
 
       if (!token) {
-        throw new Error("Token not received from backend");
+        throw new Error("Token not received");
       }
 
       localStorage.setItem("token", token);
       setToken(token);
       setUser(user);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       return response.data;
     } catch (error) {
@@ -62,22 +72,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /* ================= REGISTER ================= */
   const register = async (userData) => {
     try {
-      // REMOVED /api from the path - using just /auth/register
-      const response = await api.post("/auth/register", userData);
+      const response = await api.post("/auth/register", userData); // ✅ FIXED
 
-      const token = response.data.token || response.data.data?.token;
-      const user = response.data.user || response.data.data?.user;
+      console.log("REGISTER RESPONSE:", response.data);
+
+      const data = response.data.data;
+
+      const token = data.token;
+      const user = data;
 
       if (!token) {
-        throw new Error("Token not received from backend");
+        throw new Error("Token not received");
       }
 
       localStorage.setItem("token", token);
       setToken(token);
       setUser(user);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       return response.data;
     } catch (error) {
@@ -86,11 +101,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /* ================= LOGOUT ================= */
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    delete api.defaults.headers.common['Authorization'];
+    delete api.defaults.headers.common["Authorization"];
   };
 
   const value = {
@@ -103,9 +119,5 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

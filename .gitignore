@@ -25,3 +25,5 @@ client/yarn.lock
 Thumbs.db
 .vscode/
 .idea/
+.vercel
+.env*.local

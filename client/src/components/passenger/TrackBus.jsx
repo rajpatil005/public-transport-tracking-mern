@@ -17,46 +17,46 @@ const TrackBus = () => {
 
   /* ================= FETCH TRACKING DATA ================= */
 
-  useEffect(() => {
-    const fetchTrackingData = async () => {
-      try {
-        const [routeRes, busRes] = await Promise.all([
-          api.get("/api/routes"),
-          api.get("/api/buses"),
-        ]);
+ useEffect(() => {
+  const fetchTrackingData = async () => {
+    try {
+      const [routeRes, busRes] = await Promise.all([
+        api.get("/routes"),   // ✅ FIXED
+        api.get("/buses"),    // ✅ FIXED
+      ]);
 
-        const routes = routeRes.data.data || [];
-        const buses = busRes.data.data || [];
+      const routes = routeRes.data.data || [];
+      const buses = busRes.data.data || [];
 
-        const activeRoutes = routes
-          .map((route) => {
-            const activeBuses = buses.filter((bus) => {
-              if (!bus.route) return false;
+      const activeRoutes = routes
+        .map((route) => {
+          const activeBuses = buses.filter((bus) => {
+            if (!bus.route) return false;
 
-              return bus.route._id.toString() === route._id.toString();
-            });
+            return bus.route._id === route._id;
+          });
 
-            if (activeBuses.length > 0) {
-              return {
-                route,
-                activeBuses,
-              };
-            }
+          if (activeBuses.length > 0) {
+            return {
+              route,
+              activeBuses,
+            };
+          }
 
-            return null;
-          })
-          .filter(Boolean);
+          return null;
+        })
+        .filter(Boolean);
 
-        setRoutesWithActiveBuses(activeRoutes);
-      } catch (err) {
-        console.error("Tracking Load Error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setRoutesWithActiveBuses(activeRoutes);
+    } catch (err) {
+      console.error("Tracking Load Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchTrackingData();
-  }, []);
+  fetchTrackingData();
+}, []);
 
   /* ================= ROUTE SELECT ================= */
 

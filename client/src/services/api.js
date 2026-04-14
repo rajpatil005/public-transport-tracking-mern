@@ -1,8 +1,6 @@
-// client/src/services/api.js
 import axios from "axios";
 
-// IMPORTANT: No trailing slash, no /api at the end
-const API_URL = "https://public-transport-tracking-mern-1.onrender.com";
+const API_URL = "https://public-transport-tracking-mern-1.onrender.com/api";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -11,20 +9,20 @@ const api = axios.create({
   },
 });
 
-// Add a request interceptor for debugging
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // This will show the complete URL being called
+
     console.log("🌐 Full URL:", config.baseURL + config.url);
+
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default api;

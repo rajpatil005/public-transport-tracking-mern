@@ -139,7 +139,7 @@ const HomePage = () => {
 
   const fetchData = async () => {
     try {
-      const routesRes = await api.get("/api/routes");
+      const routesRes = await api.get("/routes");
       setPopularRoutes(routesRes.data.data?.slice(0, 4) || []);
 
       // Mock nearby buses data
