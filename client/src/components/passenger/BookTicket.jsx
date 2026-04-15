@@ -204,7 +204,6 @@ const BookTicket = () => {
   // Generate seats (1-40) with some pre-booked seats for demo
   const generateAvailableSeats = () => {
     const allSeats = Array.from({ length: 40 }, (_, i) => i + 1);
-    // Randomly mark some seats as booked for demo (20% of seats)
     const bookedSeats = [5, 12, 18, 25, 33, 7, 14, 22, 29, 38];
     return allSeats.map(seat => ({
       number: seat,
@@ -271,7 +270,7 @@ const BookTicket = () => {
         onClick={() => handleSeatSelection(seat.number, seat.available)}
         disabled={!seat.available}
         className={`
-          relative w-10 h-10 rounded-t-xl rounded-b-sm border-2 transition-all flex items-center justify-center group
+          relative w-8 h-8 sm:w-10 sm:h-10 rounded-t-xl rounded-b-sm border-2 transition-all flex items-center justify-center group
           ${!seat.available
             ? 'bg-gray-200 border-gray-300 cursor-not-allowed text-gray-400'
             : isSelected
@@ -281,7 +280,7 @@ const BookTicket = () => {
         `}
         title={!seat.available ? 'Seat Booked' : `Seat ${seat.number}`}
       >
-        <span className="text-xs font-bold">{seat.number}</span>
+        <span className="text-[10px] sm:text-xs font-bold">{seat.number}</span>
       </button>
     );
   };
@@ -492,31 +491,32 @@ const BookTicket = () => {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto">
         {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-6 sm:mb-8 overflow-x-auto">
+          <div className="flex items-center justify-between min-w-[280px] sm:min-w-0">
             {[1, 2, 3, 4].map((s) => (
               <React.Fragment key={s}>
                 <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step > s
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base ${
+                    step > s
                       ? 'bg-green-500 text-white'
                       : step === s
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-300 text-gray-600'
                     }`}>
-                    {step > s ? <CheckCircle className="h-5 w-5" /> : s}
+                    {step > s ? <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" /> : s}
                   </div>
-                  <span className="text-xs mt-2 text-gray-600">
+                  <span className="text-[10px] sm:text-xs mt-1 sm:mt-2 text-gray-600">
                     {s === 1 && 'Details'}
                     {s === 2 && 'Payment'}
-                    {s === 3 && 'Processing'}
+                    {s === 3 && 'Process'}
                     {s === 4 && 'Confirm'}
                   </span>
                 </div>
                 {s < 4 && (
-                  <ChevronRight className={`h-5 w-5 ${step > s ? 'text-green-500' : 'text-gray-400'}`} />
+                  <ChevronRight className={`h-4 w-4 sm:h-5 sm:w-5 ${step > s ? 'text-green-500' : 'text-gray-400'}`} />
                 )}
               </React.Fragment>
             ))}
@@ -525,61 +525,64 @@ const BookTicket = () => {
 
         {/* Error/Success Messages */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 flex-shrink-0" />
-            <span className="text-sm font-medium">{error}</span>
+          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+            <span className="text-xs sm:text-sm font-medium">{error}</span>
             <button onClick={() => setError('')} className="ml-auto text-red-500 hover:text-red-700">×</button>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 flex-shrink-0" />
-            <span className="text-sm font-medium">{success}</span>
+          <div className="mb-4 bg-green-50 border border-green-300 text-green-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+            <span className="text-xs sm:text-sm font-medium">{success}</span>
             <button onClick={() => setSuccess('')} className="ml-auto text-green-500 hover:text-green-700">×</button>
           </div>
         )}
 
         {/* Route Info Card */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-blue-500">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">{route.name}</h2>
-              <div className="flex items-center mt-2 text-gray-600">
-                <MapPin className="h-4 w-4 mr-1 text-red-500" />
-                <span className="font-medium">From:</span> {route.source}
-              </div>
-              <div className="flex items-center mt-1 text-gray-600">
-                <MapPin className="h-4 w-4 mr-1 text-green-500" />
-                <span className="font-medium">To:</span> {route.destination}
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6 border-l-4 border-blue-500">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
+            <div className="w-full sm:w-auto">
+              <h2 className="text-base sm:text-xl font-bold text-gray-900">{route.name}</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center mt-2 text-gray-600 gap-1 sm:gap-0">
+                <div className="flex items-center">
+                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-red-500" />
+                  <span className="text-xs sm:text-sm">From: {route.source}</span>
+                </div>
+                <span className="hidden sm:inline mx-2">•</span>
+                <div className="flex items-center">
+                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-green-500" />
+                  <span className="text-xs sm:text-sm">To: {route.destination}</span>
+                </div>
               </div>
               <div className="flex items-center mt-1 text-blue-600">
-                <Navigation className="h-4 w-4 mr-1" />
-                <span className="text-sm">{route.stops.length} stops • {route.distance}</span>
+                <Navigation className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="text-[10px] sm:text-sm">{route.stops.length} stops • {route.distance}</span>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-blue-600">₹{route.fare}</p>
-              <p className="text-sm text-gray-500">per seat</p>
-              <span className="inline-block mt-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+            <div className="text-right w-full sm:w-auto">
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600">₹{route.fare}</p>
+              <p className="text-xs text-gray-500">per seat</p>
+              <span className="inline-block mt-1 sm:mt-2 px-2 py-1 bg-green-100 text-green-700 text-[10px] sm:text-xs rounded-full">
                 {route.busType}
               </span>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4 pt-3 sm:pt-4 border-t">
             <div className="flex items-center">
-              <Clock className="h-4 w-4 text-green-600 mr-2" />
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 mr-2" />
               <div>
-                <span className="text-sm text-gray-600">Duration</span>
-                <p className="font-medium">{route.duration} mins</p>
+                <span className="text-[10px] sm:text-sm text-gray-600">Duration</span>
+                <p className="text-xs sm:text-sm font-medium">{route.duration} mins</p>
               </div>
             </div>
             <div className="flex items-center">
-              <Bus className="h-4 w-4 text-purple-600 mr-2" />
+              <Bus className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600 mr-2" />
               <div>
-                <span className="text-sm text-gray-600">Frequency</span>
-                <p className="font-medium">{route.departureTime}</p>
+                <span className="text-[10px] sm:text-sm text-gray-600">Frequency</span>
+                <p className="text-xs sm:text-sm font-medium">{route.departureTime}</p>
               </div>
             </div>
           </div>
@@ -587,14 +590,14 @@ const BookTicket = () => {
 
         {/* Step 1: Booking Details */}
         {!bookingComplete && step === 1 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Enter Booking Details</h3>
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold mb-4">Enter Booking Details</h3>
             
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Travel Date and Time */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Travel Date
                   </label>
                   <input
@@ -602,17 +605,17 @@ const BookTicket = () => {
                     value={bookingData.travelDate}
                     onChange={(e) => setBookingData({...bookingData, travelDate: e.target.value})}
                     min={today}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Departure Time
                   </label>
                   <select
                     value={bookingData.departureTime}
                     onChange={(e) => setBookingData({...bookingData, departureTime: e.target.value})}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="06:00 AM">6:00 AM</option>
                     <option value="08:30 AM">8:30 AM</option>
@@ -625,15 +628,15 @@ const BookTicket = () => {
               </div>
 
               {/* Boarding and Dropping Points */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Boarding Point
                   </label>
                   <select
                     value={bookingData.boardingPoint}
                     onChange={(e) => setBookingData({...bookingData, boardingPoint: e.target.value})}
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
                   >
                     {getStopsList().map((stop, index) => (
                       <option key={index} value={stop}>{stop}</option>
@@ -641,13 +644,13 @@ const BookTicket = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     Dropping Point
                   </label>
                   <select
                     value={bookingData.droppingPoint}
                     onChange={(e) => setBookingData({...bookingData, droppingPoint: e.target.value})}
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
                   >
                     {getStopsList().map((stop, index) => (
                       <option key={index} value={stop}>{stop}</option>
@@ -658,49 +661,49 @@ const BookTicket = () => {
 
               {/* Number of Passengers */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   Number of Passengers
                 </label>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3 sm:space-x-4">
                   <button
                     onClick={() => handlePassengerCount(-1)}
                     disabled={bookingData.passengers <= 1}
-                    className="w-10 h-10 border rounded-lg hover:bg-gray-100 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-8 h-8 sm:w-10 sm:h-10 border rounded-lg hover:bg-gray-100 text-lg sm:text-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     -
                   </button>
-                  <span className="text-2xl font-bold w-12 text-center">{bookingData.passengers}</span>
+                  <span className="text-xl sm:text-2xl font-bold w-10 sm:w-12 text-center">{bookingData.passengers}</span>
                   <button
                     onClick={() => handlePassengerCount(1)}
                     disabled={bookingData.passengers >= 6}
-                    className="w-10 h-10 border rounded-lg hover:bg-gray-100 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-8 h-8 sm:w-10 sm:h-10 border rounded-lg hover:bg-gray-100 text-lg sm:text-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Maximum 6 passengers per booking</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Maximum 6 passengers per booking</p>
               </div>
 
               {/* Seat Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4 text-center">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-4 text-center">
                   Select Your Seats (Select {bookingData.passengers} seat{bookingData.passengers !== 1 ? 's' : ''})
                 </label>
-                <div className="bg-gray-50 p-6 rounded-3xl max-w-sm mx-auto border-4 border-gray-300 relative shadow-inner">
+                <div className="bg-gray-50 p-3 sm:p-6 rounded-3xl border-4 border-gray-300 relative shadow-inner overflow-x-auto">
                   {/* Bus front indicator */}
-                  <div className="text-center mb-4">
-                    <div className="inline-block bg-gray-700 text-white text-xs px-3 py-1 rounded-full">FRONT</div>
+                  <div className="text-center mb-3 sm:mb-4">
+                    <div className="inline-block bg-gray-700 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">FRONT</div>
                   </div>
                   
-                  <div className="grid grid-cols-6 gap-2 max-w-[320px] mx-auto">
+                  <div className="grid grid-cols-6 gap-1 sm:gap-2 max-w-[320px] mx-auto">
                     {Array.from({ length: Math.ceil(availableSeats.length / 5) }).map((_, rowIndex) => (
                       <React.Fragment key={rowIndex}>
                         {renderSeat(availableSeats[rowIndex * 5])}
                         {renderSeat(availableSeats[rowIndex * 5 + 1])}
                         
                         {/* Aisle */}
-                        <div className="w-4 flex items-center justify-center">
-                          <div className="w-0.5 h-8 bg-gray-300"></div>
+                        <div className="w-2 sm:w-4 flex items-center justify-center">
+                          <div className="w-0.5 h-6 sm:h-8 bg-gray-300"></div>
                         </div>
                         
                         {renderSeat(availableSeats[rowIndex * 5 + 2])}
@@ -710,18 +713,18 @@ const BookTicket = () => {
                     ))}
                   </div>
 
-                  <div className="flex justify-center space-x-6 mt-8 pt-4 border-t border-gray-200">
+                  <div className="flex justify-center space-x-3 sm:space-x-6 mt-6 sm:mt-8 pt-4 border-t border-gray-200">
                     <div className="flex flex-col items-center">
-                      <div className="w-6 h-6 border-2 border-gray-400 bg-white rounded-t-xl rounded-b-sm mb-2"></div>
-                      <span className="text-xs font-medium text-gray-600">Available</span>
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-gray-400 bg-white rounded-t-xl rounded-b-sm mb-1 sm:mb-2"></div>
+                      <span className="text-[10px] sm:text-xs font-medium text-gray-600">Available</span>
                     </div>
                     <div className="flex flex-col items-center">
-                      <div className="w-6 h-6 border-2 border-blue-800 bg-blue-600 rounded-t-xl rounded-b-sm mb-2"></div>
-                      <span className="text-xs font-medium text-gray-600">Selected</span>
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-blue-800 bg-blue-600 rounded-t-xl rounded-b-sm mb-1 sm:mb-2"></div>
+                      <span className="text-[10px] sm:text-xs font-medium text-gray-600">Selected</span>
                     </div>
                     <div className="flex flex-col items-center">
-                      <div className="w-6 h-6 border-2 border-gray-300 bg-gray-200 rounded-t-xl rounded-b-sm mb-2"></div>
-                      <span className="text-xs font-medium text-gray-600">Booked</span>
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-gray-300 bg-gray-200 rounded-t-xl rounded-b-sm mb-1 sm:mb-2"></div>
+                      <span className="text-[10px] sm:text-xs font-medium text-gray-600">Booked</span>
                     </div>
                   </div>
                 </div>
@@ -729,33 +732,33 @@ const BookTicket = () => {
 
               {/* Passenger Details */}
               {selectedSeats.length > 0 && (
-                <div className="border-t pt-6">
-                  <h4 className="font-medium mb-4">Passenger Details</h4>
+                <div className="border-t pt-4 sm:pt-6">
+                  <h4 className="font-medium text-sm sm:text-base mb-3 sm:mb-4">Passenger Details</h4>
                   {selectedSeats.map((seat, index) => (
-                    <div key={seat} className="bg-white border rounded-lg p-4 mb-4 shadow-sm">
-                      <h5 className="font-medium mb-3 text-blue-800">Seat {seat}</h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div key={seat} className="bg-white border rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 shadow-sm">
+                      <h5 className="font-medium mb-2 sm:mb-3 text-blue-800 text-sm sm:text-base">Seat {seat}</h5>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
                         <input
                           type="text"
-                                          placeholder="Full Name"
+                          placeholder="Full Name"
                           value={bookingData.passengerDetails[index]?.name || ''}
                           onChange={(e) => {
                             const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                             handlePassengerChange(index, 'name', lettersOnly);
                           }}
-                          className="p-2 border rounded-lg"
+                          className="p-2 text-sm sm:text-base border rounded-lg"
                         />
                         <input
                           type="number"
                           placeholder="Age"
                           value={bookingData.passengerDetails[index]?.age || ''}
                           onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
-                          className="p-2 border rounded-lg"
+                          className="p-2 text-sm sm:text-base border rounded-lg"
                         />
                         <select
                           value={bookingData.passengerDetails[index]?.gender || ''}
                           onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
-                          className="p-2 border rounded-lg"
+                          className="p-2 text-sm sm:text-base border rounded-lg"
                         >
                           <option value="" disabled>Select Gender</option>
                           <option value="Male">Male</option>
@@ -766,40 +769,40 @@ const BookTicket = () => {
                     </div>
                   ))}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
                     <input
                       type="tel"
                       placeholder="Contact Number *"
                       value={bookingData.contactNumber}
                       onChange={(e) => setBookingData({...bookingData, contactNumber: e.target.value})}
-                      className="p-2 border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg"
                     />
                     <input
                       type="email"
                       placeholder="Email (Optional)"
                       value={bookingData.email}
                       onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
-                      className="p-2 border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg"
                     />
                   </div>
                 </div>
               )}
 
               {/* Fare Summary */}
-              <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Total Fare:</span>
-                  <span className="text-2xl font-bold text-blue-600">₹{calculateFare()}</span>
+                  <span className="font-medium text-sm sm:text-base">Total Fare:</span>
+                  <span className="text-xl sm:text-2xl font-bold text-blue-600">₹{calculateFare()}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">₹{Math.ceil(calculateFare() / Math.max(1, selectedSeats.length))} × {selectedSeats.length} seats</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">₹{Math.ceil(calculateFare() / Math.max(1, selectedSeats.length))} × {selectedSeats.length} seats</p>
               </div>
 
               {/* Continue Button */}
               <button
                 onClick={handleNext}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center font-medium"
+                className="w-full bg-blue-600 text-white py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center font-medium text-sm sm:text-base"
               >
-                Continue to Payment <ChevronRight className="ml-2 h-5 w-5" />
+                Continue to Payment <ChevronRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>
@@ -807,22 +810,22 @@ const BookTicket = () => {
 
         {/* Step 2: Payment */}
         {!bookingComplete && step === 2 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Payment Details</h3>
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold mb-4">Payment Details</h3>
             
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Payment Methods */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">
                   Select Payment Method
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {['card', 'upi', 'wallet'].map((method) => (
                     <button
                       key={method}
                       onClick={() => setPaymentMethod(method)}
                       className={`
-                        p-3 border rounded-lg text-center capitalize
+                        p-2 sm:p-3 border rounded-lg text-center capitalize text-sm sm:text-base
                         ${paymentMethod === method
                           ? 'border-blue-600 bg-blue-50 text-blue-600'
                           : 'border-gray-300 hover:border-gray-400'
@@ -837,22 +840,22 @@ const BookTicket = () => {
 
               {/* Card Payment Form */}
               {paymentMethod === 'card' && (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <input
                     type="text"
                     placeholder="Card Number"
                     maxLength="16"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
                   />
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <input
                       type="text"
                       placeholder="MM/YY"
                       value={cardExpiry}
                       onChange={(e) => setCardExpiry(e.target.value)}
-                      className="p-2 border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg"
                     />
                     <input
                       type="password"
@@ -860,7 +863,7 @@ const BookTicket = () => {
                       maxLength="3"
                       value={cardCVV}
                       onChange={(e) => setCardCVV(e.target.value)}
-                      className="p-2 border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg"
                     />
                   </div>
                   <input
@@ -868,7 +871,7 @@ const BookTicket = () => {
                     placeholder="Card Holder Name"
                     value={cardHolder}
                     onChange={(e) => setCardHolder(e.target.value)}
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
                   />
                 </div>
               )}
@@ -881,9 +884,9 @@ const BookTicket = () => {
                     placeholder="Enter UPI ID (e.g., name@okhdfcbank)"
                     value={upiId}
                     onChange={(e) => setUpiId(e.target.value)}
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
                   />
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-2">
                     You will receive a payment request on your UPI app
                   </p>
                 </div>
@@ -896,7 +899,7 @@ const BookTicket = () => {
                     <button
                       key={wallet}
                       onClick={() => setSelectedWallet(wallet)}
-                      className={`w-full px-4 py-3 rounded-lg border text-left transition-all ${
+                      className={`w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg border text-left transition-all text-sm sm:text-base ${
                         selectedWallet === wallet
                           ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold'
                           : 'border-gray-300 hover:border-gray-400 text-gray-700'
@@ -909,9 +912,9 @@ const BookTicket = () => {
               )}
 
               {/* Booking Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-3">Booking Summary</h4>
-                <div className="space-y-2 text-sm">
+              <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                <h4 className="font-semibold text-sm sm:text-base mb-2 sm:mb-3">Booking Summary</h4>
+                <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Route:</span>
                     <span className="font-medium text-right max-w-[60%]">
@@ -938,7 +941,7 @@ const BookTicket = () => {
                   </div>
                   <div className="flex justify-between pt-2 border-t">
                     <span className="font-semibold">Total Amount:</span>
-                    <span className="text-xl font-bold text-blue-600">
+                    <span className="text-lg sm:text-xl font-bold text-blue-600">
                       ₹{calculateFare()}
                     </span>
                   </div>
@@ -946,12 +949,12 @@ const BookTicket = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleBack}
-                  className="flex-1 border py-3 rounded-lg hover:bg-gray-50"
+                  className="order-2 sm:order-1 flex-1 border py-2.5 sm:py-3 rounded-lg hover:bg-gray-50 text-sm sm:text-base"
                 >
-                  <ChevronLeft className="inline mr-2 h-4 w-4" /> Back
+                  <ChevronLeft className="inline mr-2 h-3 w-3 sm:h-4 sm:w-4" /> Back
                 </button>
                 <button
                   onClick={() => {
@@ -980,7 +983,7 @@ const BookTicket = () => {
                     handlePayment();
                   }}
                   disabled={processing}
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50"
+                  className="order-1 sm:order-2 flex-1 bg-green-600 text-white py-2.5 sm:py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50 text-sm sm:text-base"
                 >
                   {processing ? 'Processing...' : `Pay ₹${calculateFare()}`}
                 </button>
@@ -991,88 +994,88 @@ const BookTicket = () => {
 
         {/* Step 3: Processing */}
         {!bookingComplete && step === 3 && (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-white rounded-lg shadow-md p-8 sm:p-12 text-center">
             <div className="mb-6 flex justify-center">
               <div className="relative">
-                <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-b-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-gray-200 border-b-blue-600"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <Shield className="h-6 w-6 text-blue-600" />
+                  <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
               </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Secure Payment Gateway</h3>
-            <p className="text-gray-600 animate-pulse">
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">Secure Payment Gateway</h3>
+            <p className="text-sm sm:text-base text-gray-600 animate-pulse">
               {paymentStatusMessage || 'Processing your payment...'}
             </p>
-            <div className="mt-8 bg-blue-50 p-4 rounded-lg text-sm text-left border border-blue-100">
-              <p className="font-medium text-blue-800">Do not refresh or press back!</p>
-              <p className="text-gray-600 mt-1">We are securely processing your transaction. This might take a few moments.</p>
+            <div className="mt-6 sm:mt-8 bg-blue-50 p-3 sm:p-4 rounded-lg text-left border border-blue-100">
+              <p className="font-medium text-blue-800 text-xs sm:text-sm">Do not refresh or press back!</p>
+              <p className="text-gray-600 text-xs sm:text-sm mt-1">We are securely processing your transaction. This might take a few moments.</p>
             </div>
           </div>
         )}
 
         {/* Step 4: Booking Complete */}
         {bookingComplete && step === 4 && (
-          <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-8">
             <div className="text-center mb-6">
-              <div className="inline-flex p-3 bg-green-100 rounded-full mb-4">
-                <CheckCircle className="h-12 w-12 text-green-600" />
+              <div className="inline-flex p-2 sm:p-3 bg-green-100 rounded-full mb-3 sm:mb-4">
+                <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 text-green-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
-              <p className="text-gray-600 mt-2">Your ticket has been booked successfully</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
+              <p className="text-sm sm:text-base text-gray-600 mt-2">Your ticket has been booked successfully</p>
             </div>
 
             {/* Ticket Details */}
             <div
               ref={ticketRef}
-              className="bg-white p-10 rounded-lg mb-6 border-2 border-dashed border-gray-300 shadow-sm mx-auto max-w-lg"
+              className="bg-white p-4 sm:p-10 rounded-lg mb-6 border-2 border-dashed border-gray-300 shadow-sm mx-auto max-w-lg"
             >
-              <div className="text-center mb-8">
-                <div className="flex justify-center mb-3">
-                  <Bus className="h-10 w-10 text-blue-600" />
+              <div className="text-center mb-6 sm:mb-8">
+                <div className="flex justify-center mb-2 sm:mb-3">
+                  <Bus className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600" />
                 </div>
-                <h3 className="font-bold text-2xl text-blue-900">KOLHAPUR CITY BUS TRANSPORT</h3>
-                <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest mt-2">Confirmed E-Ticket</p>
+                <h3 className="font-bold text-base sm:text-2xl text-blue-900">KOLHAPUR CITY BUS TRANSPORT</h3>
+                <p className="text-[10px] sm:text-sm font-semibold text-gray-500 uppercase tracking-widest mt-2">Confirmed E-Ticket</p>
               </div>
 
-              <div className="space-y-4 text-base">
+              <div className="space-y-3 sm:space-y-4 text-sm sm:text-base">
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500">Ticket ID:</span>
-                  <span className="font-mono font-bold">{bookingId}</span>
+                  <span className="text-gray-500 text-xs sm:text-sm">Ticket ID:</span>
+                  <span className="font-mono font-bold text-xs sm:text-sm">{bookingId}</span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500">Passenger(s):</span>
-                  <span className="font-medium text-right max-w-[60%]">
+                  <span className="text-gray-500 text-xs sm:text-sm">Passenger(s):</span>
+                  <span className="font-medium text-right max-w-[60%] text-xs sm:text-sm">
                     {bookingData.passengerDetails.map(pd => pd?.name).filter(Boolean).join(', ')}
                   </span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500">Route:</span>
-                  <span className="font-medium text-right max-w-[65%]">
+                  <span className="text-gray-500 text-xs sm:text-sm">Route:</span>
+                  <span className="font-medium text-right max-w-[65%] text-xs sm:text-sm">
                     {bookingData.boardingPoint} <span className="text-gray-400 mx-1">→</span> {bookingData.droppingPoint}
                     <br />
-                    <span className="text-xs text-blue-600 font-semibold">{route.name}</span>
+                    <span className="text-[10px] sm:text-xs text-blue-600 font-semibold">{route.name}</span>
                   </span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500">Date & Time:</span>
-                  <span className="font-medium text-right">
+                  <span className="text-gray-500 text-xs sm:text-sm">Date & Time:</span>
+                  <span className="font-medium text-right text-xs sm:text-sm">
                     {new Date(bookingData.travelDate).toLocaleDateString()} <br />
-                    <span className="text-sm font-normal text-gray-500">{bookingData.departureTime}</span>
+                    <span className="text-[10px] sm:text-xs font-normal text-gray-500">{bookingData.departureTime}</span>
                   </span>
                 </div>
                 <div className="flex justify-between items-start">
-                  <span className="text-gray-500">Seats:</span>
-                  <span className="font-medium text-lg text-green-600 font-bold">{selectedSeats.join(', ')}</span>
+                  <span className="text-gray-500 text-xs sm:text-sm">Seats:</span>
+                  <span className="font-medium text-sm sm:text-lg text-green-600 font-bold">{selectedSeats.join(', ')}</span>
                 </div>
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                  <span className="text-gray-500 font-semibold">Fare Paid:</span>
-                  <span className="font-bold text-green-600 text-xl">₹{calculateFare()}</span>
+                <div className="flex justify-between items-center pt-3 sm:pt-4 border-t border-gray-200">
+                  <span className="text-gray-500 font-semibold text-xs sm:text-sm">Fare Paid:</span>
+                  <span className="font-bold text-green-600 text-base sm:text-xl">₹{calculateFare()}</span>
                 </div>
               </div>
 
               {/* QR Code */}
-              <div className="flex justify-center mt-8 pt-6 border-t border-dashed border-gray-200">
+              <div className="flex justify-center mt-6 sm:mt-8 pt-6 border-t border-dashed border-gray-200">
                 <QRCode
                   value={JSON.stringify({
                     bookingId,
@@ -1081,13 +1084,13 @@ const BookTicket = () => {
                     date: bookingData.travelDate,
                     time: bookingData.departureTime
                   })}
-                  size={150}
+                  size={100}
                   level="H"
                   includeMargin={true}
                 />
               </div>
 
-              <p className="text-xs text-center text-gray-500 mt-4">
+              <p className="text-[10px] sm:text-xs text-center text-gray-500 mt-4">
                 Show this QR code to the conductor while boarding
               </p>
             </div>
@@ -1095,46 +1098,46 @@ const BookTicket = () => {
             {/* Action Buttons */}
             {!cancelled ? (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   <button
                     onClick={downloadTicket}
-                    className="border py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center"
+                    className="border py-2 sm:py-3 rounded-lg hover:bg-gray-50 flex items-center justify-center text-xs sm:text-sm"
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                     Download
                   </button>
                   <button
                     onClick={printTicket}
-                    className="border py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center"
+                    className="border py-2 sm:py-3 rounded-lg hover:bg-gray-50 flex items-center justify-center text-xs sm:text-sm"
                   >
-                    <Printer className="h-4 w-4 mr-2" />
+                    <Printer className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                     Print
                   </button>
                   <button
                     onClick={() => navigate('/my-bookings')}
-                    className="col-span-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium"
+                    className="col-span-2 bg-blue-600 text-white py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base"
                   >
                     View My Bookings
                   </button>
                 </div>
-                <div className="mt-4">
+                <div className="mt-3 sm:mt-4">
                   <button
                     onClick={() => setShowCancelModal(true)}
-                    className="w-full border border-red-400 text-red-600 py-2 rounded-lg hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors flex items-center justify-center"
+                    className="w-full border border-red-400 text-red-600 py-2 sm:py-3 rounded-lg hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors flex items-center justify-center text-sm sm:text-base"
                   >
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                     Cancel Booking
                   </button>
                 </div>
               </>
             ) : (
-              <div className="text-center p-6 bg-red-50 rounded-lg border border-red-200">
-                <XCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-red-700">Booking Cancelled</h3>
-                <p className="text-sm text-red-600 mt-1">Your booking has been cancelled and a refund will be processed.</p>
+              <div className="text-center p-4 sm:p-6 bg-red-50 rounded-lg border border-red-200">
+                <XCircle className="h-10 w-10 sm:h-12 sm:w-12 text-red-500 mx-auto mb-3" />
+                <h3 className="text-base sm:text-lg font-bold text-red-700">Booking Cancelled</h3>
+                <p className="text-xs sm:text-sm text-red-600 mt-1">Your booking has been cancelled and a refund will be processed.</p>
                 <button
                   onClick={() => navigate('/')}
-                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+                  className="mt-4 bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 text-sm sm:text-base"
                 >
                   Book Another Ticket
                 </button>
@@ -1149,26 +1152,26 @@ const BookTicket = () => {
           onClose={() => setShowCancelModal(false)}
           title="Cancel Booking?"
         >
-          <div className="text-center">
-            <div className="inline-flex p-3 bg-red-100 rounded-full mb-4">
-              <AlertCircle className="h-8 w-8 text-red-600" />
+          <div className="text-center p-4">
+            <div className="inline-flex p-2 sm:p-3 bg-red-100 rounded-full mb-3 sm:mb-4">
+              <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Cancel Booking?</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-2">Cancel Booking?</h3>
+            <p className="text-xs sm:text-sm text-gray-600">
               Are you sure you want to cancel ticket <strong>{bookingId}</strong>? This action cannot be undone.
             </p>
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowCancelModal(false)}
                 disabled={cancelling}
-                className="flex-1 border py-2 rounded-lg hover:bg-gray-50"
+                className="flex-1 border py-2 rounded-lg hover:bg-gray-50 text-sm sm:text-base"
               >
                 Keep Booking
               </button>
               <button
                 onClick={handleCancelBooking}
                 disabled={cancelling}
-                className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm sm:text-base"
               >
                 {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
               </button>
