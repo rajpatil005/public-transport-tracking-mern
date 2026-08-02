@@ -312,3 +312,48 @@ http://localhost:3000
 - JWT Authentication
 - Dotenv
 - CORS
+---
+
+# 💻 Development Environment
+
+| Tool | Purpose |
+|------|----------|
+| Visual Studio Code | Source Code Editor |
+| Git | Version Control |
+| GitHub | Repository Hosting |
+| npm | Package Management |
+| Postman | API Testing |
+
+---
+
+# 📷 Project Screenshots
+
+The following screenshots showcase the major functionalities of the **Public Transport Tracking System**.
+
+## 🏠 Home Page
+
+![Home](client/src/assets/screenshots/home.png)
+
+---
+
+## 🚍 Real-Time Bus Tracking
+
+![Tracking](client/src/assets/screenshots/tracking.png)
+
+---
+
+## 🎫 Ticket Booking
+
+![Booking](client/src/assets/screenshots/booking.png)
+
+---
+
+## 📅 Bus Schedule
+
+![Schedule](client/src/assets/screenshots/schedule.png)
+
+---
+
+## 📍 Nearby Bus Stop Finder
+
+![Nearby Bus Stop](client/src/assets/screenshots/bus_stop.png)
