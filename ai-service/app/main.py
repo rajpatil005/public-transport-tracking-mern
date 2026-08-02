@@ -2,8 +2,7 @@ from fastapi import FastAPI
 from app.schemas import ChatRequest, ChatResponse
 from app.services.bus_service import getAllBuses
 from app.services.formatter import simplifyBusData
-from app.services.ai_service import generateAnswer
-
+from app.services.agent_service import generateAgentAnswer
 app = FastAPI()
 
 @app.get("/")
@@ -14,13 +13,8 @@ def home() :
 
 @app.post("/api/chat")
 async def chat (request : ChatRequest):
-    buses = await getAllBuses()
-
-    formatted = simplifyBusData(buses)
-
-    answer = await generateAnswer(
-        request.question,
-        formatted
+    answer = await generateAgentAnswer(
+        request.question
     )
 
     return {
