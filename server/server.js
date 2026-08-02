@@ -11,6 +11,7 @@ import authRoutes from "./routes/authRoutes.js";
 import busRoutes from "./routes/busRoutes.js";
 import routeRoutes from "./routes/routeRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 import { startTrackingEngine } from "./utils/trackingEngine.js";
 
@@ -49,7 +50,7 @@ app.use(
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 /* ===============================
@@ -66,6 +67,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/buses", busRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/booking", bookingRoutes);
+app.use("/api/chat", aiRoutes);
 
 /* ===============================
    SERVER + SOCKET SETUP
