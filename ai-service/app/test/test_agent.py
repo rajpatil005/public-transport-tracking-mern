@@ -10,14 +10,16 @@ async def main():
             "messages": [
                 {
                     "role": "user",
-                    "content": "Tell me about route 101",
+                    "content": "Find nearest buses from latitude 16.7017 longitude 74.2431",
                 }
             ]
         }
     )
 
     last_message = response["messages"][-1]
-    print(last_message.content)
+
+    print(type(last_message))
+    print(last_message)
 
 
 asyncio.run(main())
