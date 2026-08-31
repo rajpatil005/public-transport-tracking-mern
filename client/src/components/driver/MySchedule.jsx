@@ -1,4 +1,3 @@
-// client/src/components/driver/MySchedule.jsx
 import React, { useState } from 'react';
 import { Calendar, Clock, MapPin, Bus, ChevronRight } from 'lucide-react';
 import Card from '../ui/Card';

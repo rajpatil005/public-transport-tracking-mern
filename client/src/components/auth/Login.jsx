@@ -1,4 +1,3 @@
-// client/src/components/auth/Login.jsx
 import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Bus, MapPin, Clock, User, ArrowRight } from "lucide-react";

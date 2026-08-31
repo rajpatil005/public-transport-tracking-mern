@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 const PrivateRoute = ({ children, role }) => {
   const { user, loading } = useAuth();
 
-  // ✅ Show loader instead of blank screen
+ 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen text-white">
@@ -14,7 +14,6 @@ const PrivateRoute = ({ children, role }) => {
     );
   }
 
-  // ❌ Not logged in
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -24,7 +23,6 @@ const PrivateRoute = ({ children, role }) => {
     return <Navigate to="/home" replace />;
   }
 
-  // ✅ Allowed
   return children;
 };
 

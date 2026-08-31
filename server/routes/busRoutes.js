@@ -8,13 +8,6 @@ import {
 
 const router = express.Router();
 
-/*
-=====================================
-BUS ROUTES
-=====================================
-*/
-
-// Get all buses
 router.get("/", getAllBuses);
 
 // Get bus by MongoDB _id

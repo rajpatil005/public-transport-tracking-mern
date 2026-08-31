@@ -3,19 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
+    "@react-email/components": "^1.0.12",
     "antd": "^6.3.0",
     "axios": "^1.13.6",
+    "date-fns": "^4.4.0",
+    "framer-motion": "^12.42.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "leaflet-geometryutil": "^0.10.3",
     "lucide-react": "^0.263.1",
+    "msg91": "^2.2.8",
+    "nodemailer": "^9.0.4",
     "qrcode.react": "^3.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.10.0",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "twilio": "^6.0.2"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -1,3 +1,4 @@
+// client/src/components/passenger/BookTicket.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
@@ -18,10 +19,15 @@ import {
   Printer,
   Shield,
   XCircle,
-  Navigation
+  Navigation,
+  ChevronDown,
+  Phone
 } from 'lucide-react';
 import Modal from '../ui/Model';
 import QRCode from 'qrcode.react';
+import { useAuth } from '../../context/AuthContext';
+import { sendBookingConfirmationEmail } from '../../services/emailService';
+import { smsService } from '../../services/smsService';
 
 //========= Kolhapur City Bus Routes Data ===========//
 
@@ -167,6 +173,7 @@ const BookTicket = () => {
   const { routeId } = useParams();
   const navigate = useNavigate();
   const ticketRef = useRef(null);
+  const { user } = useAuth();
 
   // Get route details from our data
   const route = allRoutes[routeId] || allRoutes["101"];
@@ -183,6 +190,7 @@ const BookTicket = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState('');
 
   // Payment form fields
   const [cardNumber, setCardNumber] = useState('');
@@ -192,13 +200,54 @@ const BookTicket = () => {
   const [upiId, setUpiId] = useState('');
   const [selectedWallet, setSelectedWallet] = useState('');
 
+  // Get today's date
+  const today = new Date();
+  
+  // Generate available time slots
+  const generateTimeSlots = () => {
+    const slots = [];
+    const startHour = 6; // 6 AM
+    const endHour = 22; // 10 PM
+    
+    for (let hour = startHour; hour <= endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour > 12 ? hour - 12 : hour;
+        const displayMinute = String(minute).padStart(2, '0');
+        slots.push({
+          value: timeStr,
+          display: `${displayHour}:${displayMinute} ${period}`
+        });
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  // Generate dates for next 7 days
+  const generateDates = () => {
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const availableDates = generateDates();
+
   const [bookingData, setBookingData] = useState({
-    travelDate: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0],
-    departureTime: '09:00 AM',
+    travelDate: availableDates[0] || new Date(new Date().setDate(new Date().getDate() + 1)),
+    departureTime: timeSlots[5]?.value || '09:00',
     passengers: 1,
     passengerDetails: [],
     boardingPoint: route.stops[0].name,
-    droppingPoint: route.stops[route.stops.length - 1].name
+    droppingPoint: route.stops[route.stops.length - 1].name,
+    contactNumber: '',
+    email: ''
   });
 
   // Generate seats (1-40) with some pre-booked seats for demo
@@ -300,7 +349,7 @@ const BookTicket = () => {
     setBookingData((prev) => {
       const newDetails = [...prev.passengerDetails];
       if (!newDetails[index]) {
-        newDetails[index] = { name: '', age: '', gender: '' };
+        newDetails[index] = { name: '', age: '', gender: '', phone: '' };
       }
       newDetails[index][field] = value;
       return { ...prev, passengerDetails: newDetails };
@@ -340,15 +389,22 @@ const BookTicket = () => {
         return;
       }
       
-      // Validate passenger details
+      // Validate passenger details with phone number
       for (let i = 0; i < selectedSeats.length; i++) {
         const pd = bookingData.passengerDetails[i];
-        if (!pd || !pd.name || !pd.age || !pd.gender) {
+        if (!pd || !pd.name || !pd.age || !pd.gender || !pd.phone) {
           const missing = [];
           if (!pd?.name) missing.push('Name');
           if (!pd?.age) missing.push('Age');
           if (!pd?.gender) missing.push('Gender');
+          if (!pd?.phone) missing.push('Phone');
           setError(`Seat ${selectedSeats[i]}: ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} required`);
+          return;
+        }
+        // Validate phone number (10 digits)
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(pd.phone.replace(/\s/g, ''))) {
+          setError(`Seat ${selectedSeats[i]}: Please enter a valid 10-digit phone number`);
           return;
         }
       }
@@ -362,7 +418,7 @@ const BookTicket = () => {
     setError('');
   };
 
-  // Process payment and create booking
+  // Process payment and create booking with notifications
   const handlePayment = async () => {
     setProcessing(true);
     setError('');
@@ -381,6 +437,13 @@ const BookTicket = () => {
       // Create booking ID
       const newBookingId = 'KB' + route.routeNumber + Math.random().toString(36).substr(2, 6).toUpperCase();
       
+      // Get user email from auth context or booking data
+      const userEmail = user?.email || bookingData.email || 'customer@example.com';
+      const userName = user?.name || bookingData.passengerDetails[0]?.name || 'Passenger';
+      
+      // Get phone number from passenger details
+      const passengerPhone = bookingData.passengerDetails[0]?.phone || bookingData.contactNumber || '9876543210';
+
       const newBooking = {
         id: newBookingId,
         bookingId: newBookingId,
@@ -389,20 +452,32 @@ const BookTicket = () => {
         routeName: route.name,
         source: route.source,
         destination: route.destination,
-        travelDate: bookingData.travelDate,
+        travelDate: bookingData.travelDate.toISOString().split('T')[0],
         departureTime: bookingData.departureTime,
         boardingPoint: bookingData.boardingPoint,
         droppingPoint: bookingData.droppingPoint,
         seats: selectedSeats,
         passengerDetails: bookingData.passengerDetails,
-        contactNumber: bookingData.contactNumber || '9876543210',
-        email: bookingData.email || 'customer@example.com',
+        contactNumber: passengerPhone,
+        email: userEmail,
         totalFare: calculateFare(),
         fare: route.fare,
         status: 'confirmed',
         bookingDate: new Date().toISOString(),
         paymentMethod: paymentMethod,
-        qrCode: newBookingId
+        qrCode: newBookingId,
+        phoneNumber: passengerPhone,
+        passengerName: userName,
+        // Notification tracking fields
+        emailSent: false,
+        smsSent: false,
+        arrivalEmailSent: false,
+        arrivalSmsSent: false,
+        delayNotificationSent: false,
+        tripCompletedEmailSent: false,
+        notificationStatus: 'pending',
+        ticketPdfPath: '',
+        driverContact: '9876543210'
       };
 
       // Get existing bookings from localStorage
@@ -418,16 +493,87 @@ const BookTicket = () => {
       
       // Save back to localStorage
       localStorage.setItem('kolhapurBusBookings', JSON.stringify(bookings));
-      
-      // Also save to session storage for immediate display
       sessionStorage.setItem('lastBooking', JSON.stringify(newBooking));
+
+      // 🚀 Send Email Notification
+      setNotificationStatus('Sending booking confirmation email...');
+      setPaymentStatusMessage('Sending booking confirmation email...');
+      
+      try {
+        const emailResult = await sendBookingConfirmationEmail({
+          email: userEmail,
+          name: userName,
+          bookingId: newBookingId,
+          routeName: route.name,
+          travelDate: new Date(bookingData.travelDate).toLocaleDateString(),
+          departureTime: getTimeDisplay(bookingData.departureTime),
+          seats: selectedSeats,
+          totalFare: calculateFare(),
+          boardingPoint: bookingData.boardingPoint,
+          droppingPoint: bookingData.droppingPoint,
+          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${newBookingId}`
+        });
+        
+        if (emailResult.success) {
+          // Update booking with email sent status
+          const updatedBookings = JSON.parse(localStorage.getItem('kolhapurBusBookings'));
+          const updatedBooking = updatedBookings.find(b => b.bookingId === newBookingId);
+          if (updatedBooking) {
+            updatedBooking.emailSent = true;
+            updatedBooking.notificationStatus = 'email_sent';
+            localStorage.setItem('kolhapurBusBookings', JSON.stringify(updatedBookings));
+          }
+          setNotificationStatus('✅ Email sent successfully!');
+        } else {
+          setNotificationStatus('⚠️ Email sending failed');
+        }
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        setNotificationStatus('⚠️ Email sending failed');
+      }
+
+      // 📱 Send SMS Notification
+      setPaymentStatusMessage('Sending booking confirmation SMS...');
+      
+      try {
+        const smsResult = await smsService.sendBookingConfirmationSMS({
+          phone: passengerPhone,
+          name: userName,
+          bookingId: newBookingId,
+          routeName: route.name,
+          travelDate: new Date(bookingData.travelDate).toLocaleDateString(),
+          departureTime: getTimeDisplay(bookingData.departureTime),
+          seats: selectedSeats,
+          boardingPoint: bookingData.boardingPoint,
+          droppingPoint: bookingData.droppingPoint
+        });
+
+        if (smsResult.success) {
+          // Update booking with SMS sent status
+          const updatedBookings = JSON.parse(localStorage.getItem('kolhapurBusBookings'));
+          const updatedBooking = updatedBookings.find(b => b.bookingId === newBookingId);
+          if (updatedBooking) {
+            updatedBooking.smsSent = true;
+            updatedBooking.notificationStatus = 'both_sent';
+            localStorage.setItem('kolhapurBusBookings', JSON.stringify(updatedBookings));
+          }
+          setNotificationStatus(prev => prev + ' 📱 SMS sent successfully!');
+        } else {
+          setNotificationStatus(prev => prev + ' ⚠️ SMS sending failed');
+        }
+      } catch (smsError) {
+        console.error('SMS sending failed:', smsError);
+        setNotificationStatus(prev => prev + ' ⚠️ SMS sending failed');
+      }
 
       setBookingId(newBookingId);
       setBookingComplete(true);
       setStep(4);
-      setSuccess('Booking confirmed successfully!');
+      setSuccess(`Booking confirmed successfully! Check your email and SMS for details. ${notificationStatus}`);
+
     } catch (error) {
       setError('Payment failed. Please try again.');
+      console.error('Booking error:', error);
     } finally {
       setProcessing(false);
     }
@@ -487,8 +633,22 @@ const BookTicket = () => {
     window.print();
   };
 
-  // Get today's date for min date
-  const today = new Date().toISOString().split('T')[0];
+  // Format date for display
+  const formatDateDisplay = (date) => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  // Get time display
+  const getTimeDisplay = (timeValue) => {
+    const slot = timeSlots.find(t => t.value === timeValue);
+    return slot ? slot.display : timeValue;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-4">
@@ -594,36 +754,61 @@ const BookTicket = () => {
             <h3 className="text-base sm:text-lg font-semibold mb-4">Enter Booking Details</h3>
             
             <div className="space-y-4 sm:space-y-6">
-              {/* Travel Date and Time */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Travel Date
-                  </label>
-                  <input
-                    type="date"
-                    value={bookingData.travelDate}
-                    onChange={(e) => setBookingData({...bookingData, travelDate: e.target.value})}
-                    min={today}
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+              {/* Travel Date - New UI with date cards */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  Select Travel Date
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {availableDates.map((date, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setBookingData({...bookingData, travelDate: date})}
+                      className={`
+                        p-2 rounded-lg text-center transition-all border-2
+                        ${bookingData.travelDate && bookingData.travelDate.getTime() === date.getTime()
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105' 
+                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-blue-400 hover:bg-blue-50'}
+                      `}
+                    >
+                      <div className="text-[10px] sm:text-xs font-medium">
+                        {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </div>
+                      <div className="text-base sm:text-lg font-bold">
+                        {date.getDate()}
+                      </div>
+                      <div className="text-[10px] sm:text-xs">
+                        {date.toLocaleDateString('en-US', { month: 'short' })}
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Departure Time
-                  </label>
-                  <select
-                    value={bookingData.departureTime}
-                    onChange={(e) => setBookingData({...bookingData, departureTime: e.target.value})}
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="06:00 AM">6:00 AM</option>
-                    <option value="08:30 AM">8:30 AM</option>
-                    <option value="11:00 AM">11:00 AM</option>
-                    <option value="02:00 PM">2:00 PM</option>
-                    <option value="05:30 PM">5:30 PM</option>
-                    <option value="09:00 PM">9:00 PM</option>
-                  </select>
+              </div>
+
+              {/* Departure Time - New UI with time slots */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                  <Clock className="h-4 w-4 inline mr-1" />
+                  Select Departure Time
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1">
+                  {timeSlots.map((slot, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setBookingData({...bookingData, departureTime: slot.value})}
+                      className={`
+                        p-2 rounded-lg text-center transition-all border-2
+                        ${bookingData.departureTime === slot.value
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105' 
+                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-blue-400 hover:bg-blue-50'}
+                      `}
+                    >
+                      <span className="text-xs sm:text-sm font-medium">{slot.display}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -636,7 +821,7 @@ const BookTicket = () => {
                   <select
                     value={bookingData.boardingPoint}
                     onChange={(e) => setBookingData({...bookingData, boardingPoint: e.target.value})}
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     {getStopsList().map((stop, index) => (
                       <option key={index} value={stop}>{stop}</option>
@@ -650,7 +835,7 @@ const BookTicket = () => {
                   <select
                     value={bookingData.droppingPoint}
                     onChange={(e) => setBookingData({...bookingData, droppingPoint: e.target.value})}
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     {getStopsList().map((stop, index) => (
                       <option key={index} value={stop}>{stop}</option>
@@ -730,41 +915,69 @@ const BookTicket = () => {
                 </div>
               </div>
 
-              {/* Passenger Details */}
+              {/* Passenger Details with Phone Number */}
               {selectedSeats.length > 0 && (
                 <div className="border-t pt-4 sm:pt-6">
                   <h4 className="font-medium text-sm sm:text-base mb-3 sm:mb-4">Passenger Details</h4>
                   {selectedSeats.map((seat, index) => (
                     <div key={seat} className="bg-white border rounded-lg p-3 sm:p-4 mb-3 sm:mb-4 shadow-sm">
                       <h5 className="font-medium mb-2 sm:mb-3 text-blue-800 text-sm sm:text-base">Seat {seat}</h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-                        <input
-                          type="text"
-                          placeholder="Full Name"
-                          value={bookingData.passengerDetails[index]?.name || ''}
-                          onChange={(e) => {
-                            const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
-                            handlePassengerChange(index, 'name', lettersOnly);
-                          }}
-                          className="p-2 text-sm sm:text-base border rounded-lg"
-                        />
-                        <input
-                          type="number"
-                          placeholder="Age"
-                          value={bookingData.passengerDetails[index]?.age || ''}
-                          onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
-                          className="p-2 text-sm sm:text-base border rounded-lg"
-                        />
-                        <select
-                          value={bookingData.passengerDetails[index]?.gender || ''}
-                          onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
-                          className="p-2 text-sm sm:text-base border rounded-lg"
-                        >
-                          <option value="" disabled>Select Gender</option>
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
-                          <option value="Other">Other</option>
-                        </select>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Full Name *</label>
+                          <input
+                            type="text"
+                            placeholder="Full Name"
+                            value={bookingData.passengerDetails[index]?.name || ''}
+                            onChange={(e) => {
+                              const lettersOnly = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                              handlePassengerChange(index, 'name', lettersOnly);
+                            }}
+                            className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Age *</label>
+                          <input
+                            type="number"
+                            placeholder="Age"
+                            value={bookingData.passengerDetails[index]?.age || ''}
+                            onChange={(e) => handlePassengerChange(index, 'age', e.target.value)}
+                            className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Gender *</label>
+                          <select
+                            value={bookingData.passengerDetails[index]?.gender || ''}
+                            onChange={(e) => handlePassengerChange(index, 'gender', e.target.value)}
+                            className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="" disabled>Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+                            <Phone className="h-3.5 w-3.5" />
+                            Phone Number *
+                          </label>
+                          <input
+                            type="tel"
+                            placeholder="10-digit phone number"
+                            value={bookingData.passengerDetails[index]?.phone || ''}
+                            onChange={(e) => {
+                              const numbersOnly = e.target.value.replace(/[^0-9]/g, '');
+                              if (numbersOnly.length <= 10) {
+                                handlePassengerChange(index, 'phone', numbersOnly);
+                              }
+                            }}
+                            className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          />
+                          <p className="text-[10px] text-gray-400 mt-0.5">Enter 10-digit phone number</p>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -775,14 +988,14 @@ const BookTicket = () => {
                       placeholder="Contact Number *"
                       value={bookingData.contactNumber}
                       onChange={(e) => setBookingData({...bookingData, contactNumber: e.target.value})}
-                      className="p-2 text-sm sm:text-base border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                     <input
                       type="email"
                       placeholder="Email (Optional)"
                       value={bookingData.email}
                       onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
-                      className="p-2 text-sm sm:text-base border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -847,7 +1060,7 @@ const BookTicket = () => {
                     maxLength="16"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <input
@@ -855,7 +1068,7 @@ const BookTicket = () => {
                       placeholder="MM/YY"
                       value={cardExpiry}
                       onChange={(e) => setCardExpiry(e.target.value)}
-                      className="p-2 text-sm sm:text-base border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                     <input
                       type="password"
@@ -863,7 +1076,7 @@ const BookTicket = () => {
                       maxLength="3"
                       value={cardCVV}
                       onChange={(e) => setCardCVV(e.target.value)}
-                      className="p-2 text-sm sm:text-base border rounded-lg"
+                      className="p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <input
@@ -871,7 +1084,7 @@ const BookTicket = () => {
                     placeholder="Card Holder Name"
                     value={cardHolder}
                     onChange={(e) => setCardHolder(e.target.value)}
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               )}
@@ -884,7 +1097,7 @@ const BookTicket = () => {
                     placeholder="Enter UPI ID (e.g., name@okhdfcbank)"
                     value={upiId}
                     onChange={(e) => setUpiId(e.target.value)}
-                    className="w-full p-2 text-sm sm:text-base border rounded-lg"
+                    className="w-full p-2 text-sm sm:text-base border rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="text-[10px] sm:text-xs text-gray-500 mt-2">
                     You will receive a payment request on your UPI app
@@ -924,12 +1137,12 @@ const BookTicket = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Date:</span>
                     <span className="font-medium">
-                      {new Date(bookingData.travelDate).toLocaleDateString()}
+                      {formatDateDisplay(bookingData.travelDate)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Time:</span>
-                    <span className="font-medium">{bookingData.departureTime}</span>
+                    <span className="font-medium">{getTimeDisplay(bookingData.departureTime)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Passengers:</span>
@@ -1023,6 +1236,9 @@ const BookTicket = () => {
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Booking Confirmed!</h2>
               <p className="text-sm sm:text-base text-gray-600 mt-2">Your ticket has been booked successfully</p>
+              {notificationStatus && (
+                <p className="text-xs text-blue-600 mt-1">{notificationStatus}</p>
+              )}
             </div>
 
             {/* Ticket Details */}
@@ -1050,6 +1266,12 @@ const BookTicket = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-start">
+                  <span className="text-gray-500 text-xs sm:text-sm">Phone:</span>
+                  <span className="font-medium text-right max-w-[60%] text-xs sm:text-sm">
+                    {bookingData.passengerDetails.map(pd => pd?.phone).filter(Boolean).join(', ')}
+                  </span>
+                </div>
+                <div className="flex justify-between items-start">
                   <span className="text-gray-500 text-xs sm:text-sm">Route:</span>
                   <span className="font-medium text-right max-w-[65%] text-xs sm:text-sm">
                     {bookingData.boardingPoint} <span className="text-gray-400 mx-1">→</span> {bookingData.droppingPoint}
@@ -1060,8 +1282,8 @@ const BookTicket = () => {
                 <div className="flex justify-between items-start">
                   <span className="text-gray-500 text-xs sm:text-sm">Date & Time:</span>
                   <span className="font-medium text-right text-xs sm:text-sm">
-                    {new Date(bookingData.travelDate).toLocaleDateString()} <br />
-                    <span className="text-[10px] sm:text-xs font-normal text-gray-500">{bookingData.departureTime}</span>
+                    {formatDateDisplay(bookingData.travelDate)} <br />
+                    <span className="text-[10px] sm:text-xs font-normal text-gray-500">{getTimeDisplay(bookingData.departureTime)}</span>
                   </span>
                 </div>
                 <div className="flex justify-between items-start">
@@ -1081,7 +1303,7 @@ const BookTicket = () => {
                     bookingId,
                     route: route.name,
                     seats: selectedSeats,
-                    date: bookingData.travelDate,
+                    date: bookingData.travelDate?.toISOString().split('T')[0],
                     time: bookingData.departureTime
                   })}
                   size={100}

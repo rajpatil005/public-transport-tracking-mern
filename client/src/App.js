@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -11,16 +10,14 @@ import {
 import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketProvider";
 
-// Layout Components
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 
-// Auth Components
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import PrivateRoute from "./components/auth/PrivateRoute";
 
-// Passenger Components
+import LandingPage from "./components/passenger/LandingPage";
 import HomePage from "./components/passenger/HomePage";
 import BookTicket from "./components/passenger/BookTicket";
 import TrackBus from "./components/passenger/TrackBus";
@@ -30,8 +27,8 @@ import MyBookings from "./components/passenger/MyBookings";
 import FareCalculator from "./components/passenger/FareCalculator";
 import NearestBusStop from "./components/passenger/NearestBusStop";
 import BusSchedule from "./components/passenger/BusSchedule";
+import ChatBox from "./components/passenger/ChatBox";
 
-// Admin Components
 import Dashboard from "./components/admin/Dashboard";
 import ManageBuses from "./components/admin/ManageBuses";
 import ManageRoutes from "./components/admin/ManageRoutes";
@@ -39,12 +36,11 @@ import ManageDrivers from "./components/admin/ManageDrivers";
 import Analytics from "./components/admin/Analytics";
 import Reports from "./components/admin/Reports";
 
-// Driver Components
 import DriverDashboard from "./components/driver/DriverDashboard";
 import UpdateLocation from "./components/driver/UpdateLocation";
 import MySchedule from "./components/driver/MySchedule";
 
-// Pages
+
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
@@ -52,18 +48,21 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
-// Layout Wrapper
+import UserProfile from './components/user/UserProfile';
+import Settings from './components/user/Settings';
+
 const AppLayout = ({ children }) => {
   const location = useLocation();
-  const hideLayoutPaths = ["/login", "/register"];
+  const hideLayoutPaths = ["/", "/login", "/register"];
   const shouldHideLayout = hideLayoutPaths.includes(location.pathname);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       {!shouldHideLayout && <Navbar />}
       <main className={`flex-grow ${!shouldHideLayout ? "pt-16" : ""}`}>
         {children}
       </main>
+      {!shouldHideLayout && <ChatBox />}
       {!shouldHideLayout && <Footer />}
     </div>
   );
@@ -76,14 +75,14 @@ function App() {
         <Router>
           <AppLayout>
             <Routes>
-              {/* Redirect */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              {/* Landing Page - First page visitors see */}
+              <Route path="/" element={<LandingPage />} />
 
-              {/* Public Routes */}
+              {/* Auth Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
-              {/* Protected Passenger */}
+              {/* Protected Passenger Routes */}
               <Route
                 path="/home"
                 element={
@@ -146,6 +145,7 @@ function App() {
                   </PrivateRoute>
                 }
               />
+           
 
               <Route
                 path="/schedule"
@@ -156,6 +156,9 @@ function App() {
                 }
               />
 
+              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/settings" element={<Settings />} />
+
               {/* Public Info Pages */}
               <Route path="/kolhapur-info" element={<KolhapurInfo />} />
               <Route path="/about" element={<About />} />
@@ -164,7 +167,7 @@ function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
 
-              {/* Admin */}
+              {/* Admin Routes */}
               <Route
                 path="/admin"
                 element={
@@ -173,7 +176,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
               <Route
                 path="/admin/buses"
                 element={
@@ -182,7 +184,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
               <Route
                 path="/admin/routes"
                 element={
@@ -191,7 +192,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
               <Route
                 path="/admin/drivers"
                 element={
@@ -200,7 +200,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
               <Route
                 path="/admin/analytics"
                 element={
@@ -209,7 +208,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
               <Route
                 path="/admin/reports"
                 element={
@@ -219,7 +217,7 @@ function App() {
                 }
               />
 
-              {/* Driver */}
+              {/* Driver Routes */}
               <Route
                 path="/driver"
                 element={
@@ -228,7 +226,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
               <Route
                 path="/driver/update-location"
                 element={
@@ -237,7 +234,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-
               <Route
                 path="/driver/schedule"
                 element={
