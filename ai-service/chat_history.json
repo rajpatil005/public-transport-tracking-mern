@@ -60,7 +60,7 @@
     },
     "session_1788835805873_v90xpuny5": {
       "created_at": "2026-09-08T08:20:16.807545",
-      "updated_at": "2026-09-08T08:20:47.800419",
+      "updated_at": "2026-09-08T08:43:55.656266",
       "messages": [
         {
           "role": "user",
@@ -81,6 +81,48 @@
           "role": "assistant",
           "content": "I only provide real-time bus tracking information (such as bus locations, routes, active buses, and schedules). \n\nCurrently, ticket booking is not supported directly through this system. To book a ticket, please use the official transit authority's mobile app, website, or purchase a ticket directly from the conductor or at the bus station counter.\n\nIf you need help checking available buses, active routes, or tracking a specific bus, feel free to ask!",
           "timestamp": "2026-09-08T08:20:16.806474"
+        },
+        {
+          "role": "user",
+          "content": "How to book a ticket?",
+          "timestamp": "2026-09-08T08:43:23.907884"
+        }
+      ]
+    },
+    "session_1788837692656_6ltmzuhhe": {
+      "created_at": "2026-09-08T08:51:20.340790",
+      "updated_at": "2026-09-08T08:51:43.679919",
+      "messages": [
+        {
+          "role": "user",
+          "content": "How to track a bus?",
+          "timestamp": "2026-09-08T08:51:20.339835"
+        }
+      ]
+    },
+    "session_1788838555616_gfjebem3v": {
+      "created_at": "2026-09-08T09:05:25.052271",
+      "updated_at": "2026-09-08T09:06:37.665528",
+      "messages": [
+        {
+          "role": "user",
+          "content": "How to book a ticket?",
+          "timestamp": "2026-09-08T09:05:25.051253"
+        },
+        {
+          "role": "assistant",
+          "content": "This assistant provides real-time bus tracking, route information, active bus counts, and location services, but **ticket booking is not supported** through this system. \n\nPlease check with your local transit authority or official booking portal/app to purchase tickets.",
+          "timestamp": "2026-09-08T09:05:25.051253"
+        },
+        {
+          "role": "user",
+          "content": "Show me all bus routes",
+          "timestamp": "2026-09-08T09:05:25.051253"
+        },
+        {
+          "role": "assistant",
+          "content": "Here are the available bus routes:\n\n* **Route 101:** Central Bus Stand \u2192 Mahalaxmi Temple \u2192 Rankala Lake\n* **Route 102:** Central Bus Stand \u2192 New Palace \u2192 DYP City Mall\n* **Route 103:** Rankala Lake \u2192 CPR Hospital \u2192 Khasbag Maidan\n* **Route 104:** Shivaji University \u2192 Central Bus Stand\n* **Route 105:** Central Bus Stand \u2192 DYP City Mall \u2192 Rankala Lake",
+          "timestamp": "2026-09-08T09:05:25.051253"
         }
       ]
     }

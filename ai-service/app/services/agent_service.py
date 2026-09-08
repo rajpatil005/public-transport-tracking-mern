@@ -54,7 +54,10 @@ async def generateAgentAnswer(question: str, session_id: str = None):
 
     except Exception as e:
         print("Agent Error:", e)
+        # Still save the user message even if agent fails
+        if session_id:
+            chat_history_service.add_message(session_id, "user", question)
         return {
-            "answer": "Sorry, I am unable to process your request right now.",
+            "answer": "Sorry, I am unable to process your request right now. Please try again later.",
             "session_id": session_id if session_id else str(uuid.uuid4())
         }

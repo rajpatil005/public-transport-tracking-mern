@@ -37,24 +37,8 @@ export const chatWithAI = async (req, res) => {
     const { sessionId, session } = getSession(session_id);
 
     // Check if AI_SERVICE_URL is set
-    if (!process.env.AI_SERVICE_URL) {
-      console.error("❌ AI_SERVICE_URL is not configured");
-      
-      // Add error message to session
-      const errorMessage = {
-        role: "assistant",
-        content: "⚠️ AI Service is not configured. Please set AI_SERVICE_URL in .env file.",
-        timestamp: new Date().toISOString()
-      };
-      session.messages.push(errorMessage);
-      
-      return res.status(200).json({
-        success: false,
-        answer: errorMessage.content,
-        session_id: sessionId,
-        error: "AI_SERVICE_URL not configured"
-      });
-    }
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    console.log(`🔗 AI Service URL: ${aiServiceUrl}`);
 
     // Add user message to session
     const userMessage = {
@@ -67,8 +51,12 @@ export const chatWithAI = async (req, res) => {
 
     try {
       // Call FastAPI service
-      console.log(`🔗 Calling FastAPI: ${process.env.AI_SERVICE_URL}/api/chat`);
-      const response = await fetch(`${process.env.AI_SERVICE_URL}/api/chat`, {
+      console.log(`🔗 Calling FastAPI: ${aiServiceUrl}/api/chat`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      const response = await fetch(`${aiServiceUrl}/api/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,24 +65,20 @@ export const chatWithAI = async (req, res) => {
           question: question,
           session_id: sessionId
         }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       console.log(`📊 FastAPI Response Status: ${response.status}`);
 
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        console.error("❌ Failed to parse FastAPI response:", parseError);
-        data = { answer: "I received an invalid response from the AI service." };
-      }
-
       if (!response.ok) {
-        console.error(`❌ FastAPI Error (${response.status}):`, data);
+        const errorText = await response.text();
+        console.error(`❌ FastAPI Error (${response.status}):`, errorText);
         
         const errorMessage = {
           role: "assistant",
-          content: `⚠️ AI Service error: ${data.detail || data.message || response.statusText || 'Unknown error'}`,
+          content: `⚠️ AI Service error: ${response.status}. Please try again.`,
           timestamp: new Date().toISOString()
         };
         session.messages.push(errorMessage);
@@ -104,6 +88,24 @@ export const chatWithAI = async (req, res) => {
           answer: errorMessage.content,
           session_id: sessionId,
           error: `FastAPI error: ${response.status}`
+        });
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error("❌ Failed to parse FastAPI response:", parseError);
+        const errorMessage = {
+          role: "assistant",
+          content: "I received an invalid response from the AI service.",
+          timestamp: new Date().toISOString()
+        };
+        session.messages.push(errorMessage);
+        return res.status(200).json({
+          success: false,
+          answer: errorMessage.content,
+          session_id: sessionId
         });
       }
 
@@ -127,16 +129,27 @@ export const chatWithAI = async (req, res) => {
     } catch (fetchError) {
       console.error("❌ Fetch Error:", fetchError.message);
       
-      const errorMessage = {
+      let errorMessage = "🔴 Cannot connect to AI service. ";
+      if (fetchError.name === 'AbortError') {
+        errorMessage += "The request timed out. Please try again.";
+      } else if (fetchError.code === 'ECONNREFUSED' || fetchError.message.includes('connect ECONNREFUSED')) {
+        errorMessage += "Please make sure FastAPI is running on port 8000.";
+      } else if (fetchError.code === 'ETIMEDOUT' || fetchError.message.includes('timeout')) {
+        errorMessage += "The service is not responding. Please check if it's running.";
+      } else {
+        errorMessage += `Error: ${fetchError.message}`;
+      }
+      
+      const errorResponse = {
         role: "assistant",
-        content: `🔴 Cannot connect to AI service. Please make sure FastAPI is running on port 8000.\n\nError: ${fetchError.message}`,
+        content: errorMessage,
         timestamp: new Date().toISOString()
       };
-      session.messages.push(errorMessage);
+      session.messages.push(errorResponse);
       
       return res.status(200).json({
         success: false,
-        answer: errorMessage.content,
+        answer: errorMessage,
         session_id: sessionId,
         error: fetchError.message
       });

@@ -9,13 +9,12 @@ load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 
 model = ChatGoogleGenerativeAI(
-    model="gemini-flash-latest",
+    model="gemini-3.6-flash",  # Using the recommended model
     google_api_key=api_key,
     temperature=0
 )
 
 parser = StrOutputParser()
-
 
 chain = (
     bus_prompt
@@ -23,13 +22,11 @@ chain = (
     | parser
 )
 
-async def generateAnswer(question, buses) :
-
+async def generateAnswer(question, buses):
     response = await chain.ainvoke(
         {
             "question": question,
             "buses": buses
         }
     )
-
     return response
