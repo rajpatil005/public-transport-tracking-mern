@@ -19,8 +19,14 @@ const ChatBox = () => {
   const inputRef = useRef(null);
   const chatContainerRef = useRef(null);
 
-  // API Configuration
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  // API Configuration - Using environment variable with fallback
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 
+    (process.env.NODE_ENV === 'production' 
+      ? 'https://public-transport-tracking-mern-1.onrender.com' 
+      : 'http://localhost:5000');
+
+  console.log(`🔗 API Base URL: ${API_BASE_URL}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
   // Storage Keys
   const STORAGE_KEYS = {
@@ -42,7 +48,7 @@ const ChatBox = () => {
     try {
       console.log(`📥 Loading history for session: ${sessionId}`);
       const response = await axios.get(`${API_BASE_URL}/api/chat/history/${sessionId}`, {
-        timeout: 5000
+        timeout: 10000
       });
       
       if (response.data.success && response.data.messages && response.data.messages.length > 0) {
@@ -119,15 +125,15 @@ const ChatBox = () => {
     loadSavedChatHistory();
     checkBackendHealth();
     
-    const interval = setInterval(checkBackendHealth, 10000);
+    const interval = setInterval(checkBackendHealth, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
   // Check backend health
   const checkBackendHealth = async () => {
     try {
-      console.log(`🔍 Checking backend at: ${API_BASE_URL}/`);
-      const response = await axios.get(`${API_BASE_URL}/`, {
+      console.log(`🔍 Checking backend at: ${API_BASE_URL}/api/health`);
+      const response = await axios.get(`${API_BASE_URL}/api/health`, {
         timeout: 5000
       });
       console.log("✅ Backend is online:", response.data);
@@ -136,7 +142,7 @@ const ChatBox = () => {
     } catch (error) {
       console.error("❌ Backend is offline:", error.message);
       setBackendStatus('offline');
-      setError("⚠️ Backend server is not running. Please start the Node.js server.");
+      setError("⚠️ Backend server is not running. Please try again later.");
       
       // Show offline message if chat is open and no messages
       if (isOpen && messages.length === 0 && isInitialized) {
@@ -144,7 +150,7 @@ const ChatBox = () => {
           {
             id: Date.now(),
             role: "assistant",
-            content: "⚠️ **Backend server is not running**\n\nPlease start the Node.js server:\n```bash\ncd server\nnpm start\n```\n\nOnce started, refresh this page.",
+            content: "⚠️ **Backend server is not running**\n\nPlease try again later or contact support.",
             timestamp: new Date().toLocaleTimeString()
           }
         ]);
@@ -195,13 +201,13 @@ const ChatBox = () => {
 
     // Check if backend is offline
     if (backendStatus === 'offline') {
-      setError("⚠️ Backend server is not running. Please start the server.");
+      setError("⚠️ Backend server is not running. Please try again later.");
       
       // Show error message in chat
       const errorMessage = {
         id: Date.now(),
         role: "assistant",
-        content: "🔴 **Server Offline**\n\nI can't process your request right now because the backend server is not running.\n\n**Please start the server:**\n```bash\ncd server\nnpm start\n```\n\nOnce the server is running, try again.",
+        content: "🔴 **Server Offline**\n\nI can't process your request right now. Please try again later.",
         timestamp: new Date().toLocaleTimeString()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -285,12 +291,12 @@ const ChatBox = () => {
         } else if (error.response.status === 500) {
           errorMessage += "The server encountered an error. Please check the backend logs.";
         } else if (error.response.status === 503) {
-          errorMessage += "The AI service is not available. Please make sure FastAPI is running on port 8000.";
+          errorMessage += "The AI service is not available. Please try again later.";
         } else {
           errorMessage += `Server error: ${error.response.status}. Please try again later.`;
         }
       } else if (error.request) {
-        errorMessage += "The service is not responding. Please make sure the backend is running on port 5000.";
+        errorMessage += "The service is not responding. Please try again later.";
       } else {
         errorMessage += "Please try again later.";
       }
@@ -323,11 +329,11 @@ const ChatBox = () => {
   const handleQuickSuggestion = (query) => {
     // Check if backend is offline before sending suggestion
     if (backendStatus === 'offline') {
-      setError("⚠️ Backend server is not running. Please start the server.");
+      setError("⚠️ Backend server is not running. Please try again later.");
       const errorMessage = {
         id: Date.now(),
         role: "assistant",
-        content: "🔴 **Server Offline**\n\nI can't process your request right now because the backend server is not running.\n\n**Please start the server:**\n```bash\ncd server\nnpm start\n```\n\nOnce the server is running, try again.",
+        content: "🔴 **Server Offline**\n\nI can't process your request right now. Please try again later.",
         timestamp: new Date().toLocaleTimeString()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -489,11 +495,8 @@ const ChatBox = () => {
                         Server Offline
                       </h4>
                       <p className="text-xs sm:text-sm text-red-600 dark:text-red-300 mt-1">
-                        The backend server is not running. Please start the server to use the chat.
+                        The backend server is not responding. Please try again later.
                       </p>
-                      <div className="mt-2 bg-gray-900 text-white rounded-lg p-2 sm:p-3 text-[10px] sm:text-xs font-mono overflow-x-auto">
-                        <code>cd server && npm start</code>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -600,7 +603,7 @@ const ChatBox = () => {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={backendStatus === 'online' ? "Ask me about buses..." : "🔴 Server offline - Start backend first"}
+                  placeholder={backendStatus === 'online' ? "Ask me about buses..." : "🔴 Server offline - Try again later"}
                   rows={1}
                   disabled={backendStatus === 'offline'}
                   className={`w-full px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl focus:outline-none focus:ring-2 resize-none text-xs sm:text-sm placeholder-gray-500 ${

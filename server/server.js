@@ -33,6 +33,8 @@ const allowedOrigins = [
   "http://127.0.0.1:3000",
   "http://127.0.0.1:5173",
   process.env.CLIENT_URL,
+    "https://public-transport-tracking-mern-3.onrender.com",
+
 ].filter(Boolean);
 
 app.use(
