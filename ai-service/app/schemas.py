@@ -4,7 +4,7 @@ from datetime import datetime
 
 class ChatRequest(BaseModel):
     question: str
-    session_id: Optional[str] = None  # Add session_id for tracking conversations
+    session_id: Optional[str] = None  
 
 class ChatResponse(BaseModel):
     answer: str

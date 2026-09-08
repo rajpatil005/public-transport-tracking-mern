@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
+    role: str 
     content: str
     timestamp: datetime = datetime.now()
 
@@ -14,4 +14,4 @@ class ChatSession(BaseModel):
     updated_at: datetime = datetime.now()
 
 class ChatHistory(BaseModel):
-    sessions: dict = {}  # session_id -> ChatSession
+    sessions: dict = {}  

@@ -5,27 +5,21 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 async def generateAgentAnswer(question: str, session_id: str = None):
     try:
-        # Generate session_id if not provided
         if not session_id:
             session_id = str(uuid.uuid4())
         
-        # Get chat history for context
         session = chat_history_service.get_or_create_session(session_id)
         
-        # Build messages with history
         messages = []
         
-        # Add last 5 messages for context (to avoid token limits)
         for msg in session.messages[-5:]:
             if msg.role == "user":
                 messages.append(HumanMessage(content=msg.content))
             else:
                 messages.append(AIMessage(content=msg.content))
         
-        # Add current question
         messages.append(HumanMessage(content=question))
         
-        # Get agent response
         response = await agent.ainvoke(
             {
                 "messages": messages
@@ -43,7 +37,6 @@ async def generateAgentAnswer(question: str, session_id: str = None):
         else:
             answer = final_message.content
         
-        # Save to chat history
         chat_history_service.add_message(session_id, "user", question)
         chat_history_service.add_message(session_id, "assistant", answer)
         
@@ -54,7 +47,6 @@ async def generateAgentAnswer(question: str, session_id: str = None):
 
     except Exception as e:
         print("Agent Error:", e)
-        # Still save the user message even if agent fails
         if session_id:
             chat_history_service.add_message(session_id, "user", question)
         return {

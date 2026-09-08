@@ -1,4 +1,3 @@
-# main.py - Root level file
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.schemas import ChatRequest, ChatResponse, ChatHistoryResponse
@@ -11,7 +10,6 @@ import json
 
 app = FastAPI(title="Kolhapur Bus AI Service", version="1.0.0")
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -19,7 +17,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5000",
         "https://kolhapur-bus-backend.onrender.com",
-        "*"  # For development
+        "*"  
     ],
     allow_credentials=True,
     allow_methods=["*"],

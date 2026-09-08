@@ -93,5 +93,4 @@ class ChatHistoryService:
             del self.sessions[session_id]
             self._save_history()
 
-# Singleton instance
 chat_history_service = ChatHistoryService()

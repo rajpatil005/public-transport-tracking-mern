@@ -14,15 +14,12 @@ from app.tools.search_bus_tool import search_bus_tool
 
 load_dotenv()
 
-# Get API key from environment
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
     raise ValueError("GOOGLE_API_KEY is not set in environment variables")
 
-# Use the correct model name - from the available models list
-# gemini-3.6-flash is the recommended model
 model = ChatGoogleGenerativeAI(
-    model="gemini-3.6-flash",  # Latest stable flash model
+    model="gemini-3.6-flash", 
     google_api_key=api_key,
     temperature=0,
 )

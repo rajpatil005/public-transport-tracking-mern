@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get backend URL with fallback
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
 print(f"🔗 Backend URL: {BACKEND_URL}")
 
