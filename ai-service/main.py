@@ -1,3 +1,4 @@
+# main.py - Root level file
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.schemas import ChatRequest, ChatResponse, ChatHistoryResponse
@@ -18,7 +19,6 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:5000",
         "https://kolhapur-bus-backend.onrender.com",
-        "https://your-frontend.vercel.app",
         "*"  # For development
     ],
     allow_credentials=True,
