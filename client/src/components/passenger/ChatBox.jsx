@@ -19,7 +19,6 @@ const ChatBox = () => {
   const inputRef = useRef(null);
   const chatContainerRef = useRef(null);
 
-  // API Configuration - Using environment variable with fallback
   const API_BASE_URL = process.env.REACT_APP_API_URL || 
     (process.env.NODE_ENV === 'production' 
       ? 'https://public-transport-tracking-mern-1.onrender.com' 
@@ -28,12 +27,10 @@ const ChatBox = () => {
   console.log(`🔗 API Base URL: ${API_BASE_URL}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
-  // Storage Keys
   const STORAGE_KEYS = {
     SESSION_ID: 'kolhapur_chat_session_id'
   };
 
-  // Quick Suggestions
   const quickSuggestions = [
     { icon: "🚍", label: "Bus Routes", query: "Show me all bus routes" },
     { icon: "🎫", label: "Book Ticket", query: "How to book a ticket?" },
@@ -43,7 +40,6 @@ const ChatBox = () => {
     { icon: "⏰", label: "Schedule", query: "What are the bus timings?" }
   ];
 
-  // Load chat history from backend
   const loadChatHistory = async (sessionId) => {
     try {
       console.log(`📥 Loading history for session: ${sessionId}`);
@@ -69,7 +65,6 @@ const ChatBox = () => {
     }
   };
 
-  // Initialize chat with welcome messages
   const initializeChat = () => {
     const welcomeMessages = [
       {
@@ -89,15 +84,12 @@ const ChatBox = () => {
     setMessages(welcomeMessages);
   };
 
-  // Load saved chat history on mount
   useEffect(() => {
     const loadSavedChatHistory = async () => {
       try {
-        // Check for existing session ID
         const savedSession = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
         if (savedSession) {
           setSessionId(savedSession);
-          // Try to load history from backend
           const loaded = await loadChatHistory(savedSession);
           if (loaded) {
             setIsInitialized(true);
@@ -105,7 +97,6 @@ const ChatBox = () => {
           }
         }
 
-        // If no history or failed to load, create new session
         const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         setSessionId(newSessionId);
         localStorage.setItem(STORAGE_KEYS.SESSION_ID, newSessionId);
@@ -125,11 +116,10 @@ const ChatBox = () => {
     loadSavedChatHistory();
     checkBackendHealth();
     
-    const interval = setInterval(checkBackendHealth, 30000); // Check every 30 seconds
+    const interval = setInterval(checkBackendHealth, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Check backend health
   const checkBackendHealth = async () => {
     try {
       console.log(`🔍 Checking backend at: ${API_BASE_URL}/api/health`);
@@ -144,7 +134,6 @@ const ChatBox = () => {
       setBackendStatus('offline');
       setError("⚠️ Backend server is not running. Please try again later.");
       
-      // Show offline message if chat is open and no messages
       if (isOpen && messages.length === 0 && isInitialized) {
         setMessages([
           {
@@ -158,12 +147,10 @@ const ChatBox = () => {
     }
   };
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Focus input when chat opens
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -176,20 +163,15 @@ const ChatBox = () => {
     }
   };
 
-  // Clear chat history
   const clearChatHistory = async () => {
     try {
-      // Clear from backend
       await axios.delete(`${API_BASE_URL}/api/chat/history/${sessionId}`);
-      
-      // Clear local state
       setMessages([]);
       initializeChat();
       setShowClearConfirm(false);
       console.log('🗑️ Chat history cleared');
     } catch (error) {
       console.error('❌ Error clearing chat:', error);
-      // Still clear local even if backend fails
       setMessages([]);
       initializeChat();
       setShowClearConfirm(false);
@@ -199,11 +181,9 @@ const ChatBox = () => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isLoading) return;
 
-    // Check if backend is offline
     if (backendStatus === 'offline') {
       setError("⚠️ Backend server is not running. Please try again later.");
       
-      // Show error message in chat
       const errorMessage = {
         id: Date.now(),
         role: "assistant",
@@ -228,6 +208,17 @@ const ChatBox = () => {
     setIsLoading(true);
     setError(null);
 
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      const timeoutMessage = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: "⏰ **Request Timeout**\n\nThe server is taking too long to respond. Please try:\n• Asking a simpler question\n• Breaking down your question\n• Trying again in a moment",
+        timestamp: new Date().toLocaleTimeString()
+      };
+      setMessages(prev => [...prev, timeoutMessage]);
+    }, 20000);
+
     try {
       console.log(`📤 Sending to: ${API_BASE_URL}/api/chat`);
       console.log(`🔑 Session ID: ${sessionId}`);
@@ -242,13 +233,14 @@ const ChatBox = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 30000
+          timeout: 20000
         }
       );
 
+      clearTimeout(timeoutId);
+
       console.log("✅ Response received:", response.data);
 
-      // Update session ID if returned
       if (response.data.session_id && response.data.session_id !== sessionId) {
         setSessionId(response.data.session_id);
         localStorage.setItem(STORAGE_KEYS.SESSION_ID, response.data.session_id);
@@ -279,26 +271,27 @@ const ChatBox = () => {
       
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error("❌ Chat API Error:", error);
       
       let errorMessage = "⚠️ Sorry, I'm having trouble connecting to the server. ";
       
-      if (error.code === 'ECONNABORTED') {
-        errorMessage += "The request timed out. Please try again.";
+      if (error.code === 'ECONNABORTED' || error.message === 'Request timeout') {
+        errorMessage = "⏰ **Request Timeout**\n\nThe server is taking too long to respond. Please try:\n• Asking a simpler question\n• Breaking down your question\n• Trying again in a moment";
       } else if (error.response) {
         if (error.response.status === 404) {
-          errorMessage += "The AI endpoint was not found. Please check if the backend is running.";
+          errorMessage = "❌ **Endpoint Not Found**\n\nThe AI endpoint was not found. Please check the server configuration.";
         } else if (error.response.status === 500) {
-          errorMessage += "The server encountered an error. Please check the backend logs.";
+          errorMessage = "⚠️ **Server Error**\n\nThe server encountered an error. Please try again later.";
         } else if (error.response.status === 503) {
-          errorMessage += "The AI service is not available. Please try again later.";
+          errorMessage = "🔴 **Service Unavailable**\n\nThe AI service is temporarily unavailable. Please try again in a few minutes.";
         } else {
-          errorMessage += `Server error: ${error.response.status}. Please try again later.`;
+          errorMessage = `⚠️ **Error ${error.response.status}**\n\nThe server returned an error. Please try again.`;
         }
       } else if (error.request) {
-        errorMessage += "The service is not responding. Please try again later.";
+        errorMessage = "🌐 **Network Error**\n\nUnable to reach the server. Please check your internet connection.";
       } else {
-        errorMessage += "Please try again later.";
+        errorMessage = "⚠️ **Unknown Error**\n\nAn unexpected error occurred. Please try again.";
       }
       
       setError(errorMessage);
@@ -311,6 +304,7 @@ const ChatBox = () => {
       };
       setMessages(prev => [...prev, errorResponse]);
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
@@ -327,7 +321,6 @@ const ChatBox = () => {
   };
 
   const handleQuickSuggestion = (query) => {
-    // Check if backend is offline before sending suggestion
     if (backendStatus === 'offline') {
       setError("⚠️ Backend server is not running. Please try again later.");
       const errorMessage = {
@@ -346,7 +339,6 @@ const ChatBox = () => {
     }, 100);
   };
 
-  // Format message with markdown-like styling
   const formatMessage = (content) => {
     const lines = content.split('\n');
     return lines.map((line, index) => {
@@ -358,7 +350,6 @@ const ChatBox = () => {
     });
   };
 
-  // Floating Chat Button
   if (!isOpen) {
     return (
       <div className="fixed bottom-4 right-4 z-50">
@@ -388,7 +379,6 @@ const ChatBox = () => {
       isMinimized ? 'w-64 h-12 sm:w-72 sm:h-14' : 'w-[calc(100vw-2rem)] sm:w-[480px] md:w-[520px] h-[calc(100vh-8rem)] sm:h-[600px] md:h-[700px]'
     } rounded-2xl shadow-3xl flex flex-col overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-6rem)]`}>
       
-      {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="relative flex-shrink-0">
@@ -451,7 +441,6 @@ const ChatBox = () => {
         </div>
       </div>
 
-      {/* Clear History Confirmation Modal */}
       {showClearConfirm && (
         <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl">
@@ -479,13 +468,11 @@ const ChatBox = () => {
 
       {!isMinimized && (
         <>
-          {/* Messages Area */}
           <div 
             className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800/50"
             ref={chatContainerRef}
           >
             <div className="space-y-3 sm:space-y-4">
-              {/* Offline Banner - Shows when backend is offline */}
               {backendStatus === 'offline' && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 sm:p-4 mb-3 sm:mb-4">
                   <div className="flex items-start gap-2 sm:gap-3">
@@ -569,7 +556,6 @@ const ChatBox = () => {
             </div>
           </div>
 
-          {/* Quick Suggestions - Disabled when offline */}
           <div className="px-2 py-1.5 sm:px-4 sm:py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0 overflow-x-auto scrollbar-hide">
             <div className="flex gap-1.5 sm:gap-2">
               {quickSuggestions.map((suggestion, index) => (
@@ -594,7 +580,6 @@ const ChatBox = () => {
             </div>
           </div>
 
-          {/* Input Area */}
           <div className="p-2 sm:p-3 md:p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div className="flex items-end gap-1.5 sm:gap-2">
               <div className="flex-1 relative">
@@ -635,7 +620,6 @@ const ChatBox = () => {
               </button>
             </div>
 
-            {/* Status Footer */}
             <div className="mt-1.5 text-center flex items-center justify-center gap-2 sm:gap-4">
               <span className={`text-[8px] sm:text-[10px] flex items-center gap-1 ${
                 backendStatus === 'online' ? 'text-green-500' : 'text-red-400'

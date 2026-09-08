@@ -19,9 +19,9 @@ if not api_key:
     raise ValueError("GOOGLE_API_KEY is not set in environment variables")
 
 model = ChatGoogleGenerativeAI(
-    model="gemini-3.6-flash", 
+    model="gemini-3.6-flash",
     google_api_key=api_key,
-    temperature=0,
+    temperature=0.1,
 )
 
 print(f"✅ Using Gemini model: gemini-3.6-flash")

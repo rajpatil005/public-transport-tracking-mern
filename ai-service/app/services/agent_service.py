@@ -2,17 +2,24 @@ import uuid
 from app.agents.bus_agent import agent
 from app.services.chat_history_service import chat_history_service
 from langchain_core.messages import HumanMessage, AIMessage
+import asyncio
 
 async def generateAgentAnswer(question: str, session_id: str = None):
     try:
         if not session_id:
             session_id = str(uuid.uuid4())
         
+        if agent is None:
+            return {
+                "answer": "⚠️ AI service is not properly configured.",
+                "session_id": session_id
+            }
+        
         session = chat_history_service.get_or_create_session(session_id)
         
         messages = []
         
-        for msg in session.messages[-5:]:
+        for msg in session.messages[-3:]:
             if msg.role == "user":
                 messages.append(HumanMessage(content=msg.content))
             else:
@@ -20,11 +27,17 @@ async def generateAgentAnswer(question: str, session_id: str = None):
         
         messages.append(HumanMessage(content=question))
         
-        response = await agent.ainvoke(
-            {
-                "messages": messages
+        try:
+            response = await asyncio.wait_for(
+                agent.ainvoke({"messages": messages}),
+                timeout=15.0
+            )
+        except asyncio.TimeoutError:
+            print("⏰ Agent timeout after 15 seconds")
+            return {
+                "answer": "⏰ I'm taking too long to respond. Please try a simpler question.",
+                "session_id": session_id
             }
-        )
         
         final_message = response["messages"][-1]
         
