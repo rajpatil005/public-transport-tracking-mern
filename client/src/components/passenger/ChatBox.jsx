@@ -13,6 +13,7 @@ const ChatBox = () => {
   const [error, setError] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(12);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -23,9 +24,7 @@ const ChatBox = () => {
   
   // Storage Keys
   const STORAGE_KEYS = {
-    MESSAGES: 'kolhapur_chat_messages',
-    SESSION_ID: 'kolhapur_chat_session_id',
-    CHAT_HISTORY: 'kolhapur_chat_history'
+    SESSION_ID: 'kolhapur_chat_session_id'
   };
 
   // Quick Suggestions
@@ -38,115 +37,33 @@ const ChatBox = () => {
     { icon: "⏰", label: "Schedule", query: "What are the bus timings?" }
   ];
 
-  // Load saved messages from localStorage on mount
-  useEffect(() => {
-    loadSavedChatHistory();
-    checkBackendHealth();
-    
-    const interval = setInterval(checkBackendHealth, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Save messages to localStorage whenever they change
-  useEffect(() => {
-    if (messages.length > 0) {
-      saveChatHistory();
-    }
-  }, [messages]);
-
-  // Load saved chat history
-  const loadSavedChatHistory = () => {
+  // Load chat history from backend
+  const loadChatHistory = async (sessionId) => {
     try {
-      const savedMessages = localStorage.getItem(STORAGE_KEYS.MESSAGES);
-      if (savedMessages) {
-        const parsed = JSON.parse(savedMessages);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-          console.log(`📚 Loaded ${parsed.length} messages from memory`);
-        }
-      }
-
-      const savedSession = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
-      if (savedSession) {
-        setSessionId(savedSession);
-        console.log('🔑 Loaded session ID:', savedSession);
-      } else {
-        const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        setSessionId(newSessionId);
-        localStorage.setItem(STORAGE_KEYS.SESSION_ID, newSessionId);
-      }
-
-      if (!savedMessages) {
-        initializeChat();
-      }
-    } catch (error) {
-      console.error('❌ Error loading chat history:', error);
-      initializeChat();
-    }
-  };
-
-  // Save chat history to localStorage
-  const saveChatHistory = () => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
-      
-      const summary = {
-        count: messages.length,
-        lastMessage: messages[messages.length - 1]?.content?.substring(0, 50) || '',
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(summary));
-    } catch (error) {
-      console.error('❌ Error saving chat history:', error);
-    }
-  };
-
-  // Clear chat history
-  const clearChatHistory = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEYS.MESSAGES);
-      localStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY);
-      setMessages([]);
-      initializeChat();
-      setShowClearConfirm(false);
-      console.log('🗑️ Chat history cleared');
-    } catch (error) {
-      console.error('❌ Error clearing chat:', error);
-    }
-  };
-
-  const checkBackendHealth = async () => {
-    try {
-      console.log(`🔍 Checking backend at: ${API_BASE_URL}/`);
-      const response = await axios.get(`${API_BASE_URL}/`, {
+      console.log(`📥 Loading history for session: ${sessionId}`);
+      const response = await axios.get(`${API_BASE_URL}/api/chat/history/${sessionId}`, {
         timeout: 5000
       });
-      console.log("✅ Backend is online:", response.data);
-      setBackendStatus('online');
-      setError(null);
       
-      if (messages.length === 0) {
-        initializeChat();
+      if (response.data.success && response.data.messages && response.data.messages.length > 0) {
+        const formattedMessages = response.data.messages.map((msg, index) => ({
+          id: Date.now() + index,
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content,
+          timestamp: new Date(msg.timestamp).toLocaleTimeString()
+        }));
+        setMessages(formattedMessages);
+        console.log(`📚 Loaded ${formattedMessages.length} messages from backend`);
+        return true;
       }
+      return false;
     } catch (error) {
-      console.error("❌ Backend is offline:", error.message);
-      setBackendStatus('offline');
-      setError("⚠️ Backend server is not running. Please start the Node.js server.");
-      
-      // Show offline message if chat is open and no messages
-      if (isOpen && messages.length === 0) {
-        setMessages([
-          {
-            id: Date.now(),
-            role: "assistant",
-            content: "⚠️ **Backend server is not running**\n\nPlease start the Node.js server:\n```bash\ncd server\nnpm start\n```\n\nOnce started, refresh this page.",
-            timestamp: new Date().toLocaleTimeString()
-          }
-        ]);
-      }
+      console.error('❌ Error loading chat history:', error);
+      return false;
     }
   };
 
+  // Initialize chat with welcome messages
   const initializeChat = () => {
     const welcomeMessages = [
       {
@@ -164,16 +81,112 @@ const ChatBox = () => {
     ];
     
     setMessages(welcomeMessages);
-    saveChatHistory();
   };
 
+  // Load saved chat history on mount
+  useEffect(() => {
+    const loadSavedChatHistory = async () => {
+      try {
+        // Check for existing session ID
+        const savedSession = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
+        if (savedSession) {
+          setSessionId(savedSession);
+          // Try to load history from backend
+          const loaded = await loadChatHistory(savedSession);
+          if (loaded) {
+            setIsInitialized(true);
+            return;
+          }
+        }
+
+        // If no history or failed to load, create new session
+        const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setSessionId(newSessionId);
+        localStorage.setItem(STORAGE_KEYS.SESSION_ID, newSessionId);
+        initializeChat();
+        setIsInitialized(true);
+        
+      } catch (error) {
+        console.error('❌ Error loading chat history:', error);
+        const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setSessionId(newSessionId);
+        localStorage.setItem(STORAGE_KEYS.SESSION_ID, newSessionId);
+        initializeChat();
+        setIsInitialized(true);
+      }
+    };
+
+    loadSavedChatHistory();
+    checkBackendHealth();
+    
+    const interval = setInterval(checkBackendHealth, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check backend health
+  const checkBackendHealth = async () => {
+    try {
+      console.log(`🔍 Checking backend at: ${API_BASE_URL}/`);
+      const response = await axios.get(`${API_BASE_URL}/`, {
+        timeout: 5000
+      });
+      console.log("✅ Backend is online:", response.data);
+      setBackendStatus('online');
+      setError(null);
+    } catch (error) {
+      console.error("❌ Backend is offline:", error.message);
+      setBackendStatus('offline');
+      setError("⚠️ Backend server is not running. Please start the Node.js server.");
+      
+      // Show offline message if chat is open and no messages
+      if (isOpen && messages.length === 0 && isInitialized) {
+        setMessages([
+          {
+            id: Date.now(),
+            role: "assistant",
+            content: "⚠️ **Backend server is not running**\n\nPlease start the Node.js server:\n```bash\ncd server\nnpm start\n```\n\nOnce started, refresh this page.",
+            timestamp: new Date().toLocaleTimeString()
+          }
+        ]);
+      }
+    }
+  };
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  // Focus input when chat opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // Clear chat history
+  const clearChatHistory = async () => {
+    try {
+      // Clear from backend
+      await axios.delete(`${API_BASE_URL}/api/chat/history/${sessionId}`);
+      
+      // Clear local state
+      setMessages([]);
+      initializeChat();
+      setShowClearConfirm(false);
+      console.log('🗑️ Chat history cleared');
+    } catch (error) {
+      console.error('❌ Error clearing chat:', error);
+      // Still clear local even if backend fails
+      setMessages([]);
+      initializeChat();
+      setShowClearConfirm(false);
     }
   };
 
@@ -211,6 +224,7 @@ const ChatBox = () => {
 
     try {
       console.log(`📤 Sending to: ${API_BASE_URL}/api/chat`);
+      console.log(`🔑 Session ID: ${sessionId}`);
       
       const response = await axios.post(
         `${API_BASE_URL}/api/chat`,
@@ -226,7 +240,13 @@ const ChatBox = () => {
         }
       );
 
-      console.log("✅ Response received");
+      console.log("✅ Response received:", response.data);
+
+      // Update session ID if returned
+      if (response.data.session_id && response.data.session_id !== sessionId) {
+        setSessionId(response.data.session_id);
+        localStorage.setItem(STORAGE_KEYS.SESSION_ID, response.data.session_id);
+      }
 
       let answer = "I processed your request but didn't get a response.";
       
@@ -332,22 +352,8 @@ const ChatBox = () => {
     });
   };
 
-  // Get chat history summary
-  const getChatSummary = () => {
-    try {
-      const summary = localStorage.getItem(STORAGE_KEYS.CHAT_HISTORY);
-      if (summary) {
-        return JSON.parse(summary);
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
   // Floating Chat Button
   if (!isOpen) {
-    const chatSummary = getChatSummary();
     return (
       <div className="fixed bottom-4 right-4 z-50">
         <button
@@ -366,15 +372,6 @@ const ChatBox = () => {
             <Sparkles className="h-5 w-5" />
             <span className="text-[6px] font-medium mt-0.5">Ask AI</span>
           </div>
-          
-          {chatSummary && chatSummary.count > 0 && (
-            <div className="absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-              💬 {chatSummary.count} messages
-              <span className="block text-gray-400 text-[10px]">
-                Last: {new Date(chatSummary.lastUpdated).toLocaleTimeString()}
-              </span>
-            </div>
-          )}
         </button>
       </div>
     );
@@ -647,8 +644,16 @@ const ChatBox = () => {
               </span>
               <span className="text-[8px] sm:text-[10px] text-gray-300">|</span>
               <span className="text-[8px] sm:text-[10px] text-gray-400">
-                {messages.length} messages saved
+                {messages.length} messages
               </span>
+              {sessionId && (
+                <>
+                  <span className="text-[8px] sm:text-[10px] text-gray-300">|</span>
+                  <span className="text-[8px] sm:text-[10px] text-gray-400 truncate max-w-[80px]">
+                    {sessionId.substring(0, 12)}...
+                  </span>
+                </>
+              )}
               {backendStatus === 'offline' && (
                 <>
                   <span className="text-[8px] sm:text-[10px] text-gray-300">|</span>
